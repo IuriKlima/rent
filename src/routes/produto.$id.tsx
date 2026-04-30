@@ -1,0 +1,205 @@
+import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import {
+  getProductById,
+  getRelatedProducts,
+  categories,
+} from "@/data/products";
+import { ProductPlaceholder } from "@/components/product/ProductPlaceholder";
+import { ProductCard } from "@/components/product/ProductCard";
+import { Button } from "@/components/ui/button";
+import { useCart } from "@/store/cart";
+import { ArrowLeft, Plus, Check, Sparkles } from "lucide-react";
+import { toast } from "sonner";
+
+export const Route = createFileRoute("/produto/$id")({
+  loader: ({ params }) => {
+    const product = getProductById(params.id);
+    if (!product) throw notFound();
+    return { product };
+  },
+  head: ({ loaderData }) => {
+    const product = loaderData?.product;
+    if (!product) {
+      return {
+        meta: [{ title: "Produto não encontrado — Rent Fitness" }],
+      };
+    }
+    const categoryLabel =
+      categories.find((c) => c.slug === product.category)?.label ?? "";
+    const title = `${product.name} — Rent Fitness`;
+    const description = `${product.shortDescription} ${categoryLabel}.`;
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+      ],
+    };
+  },
+  notFoundComponent: () => (
+    <div className="mx-auto max-w-2xl px-4 py-24 text-center">
+      <h1 className="text-3xl font-extrabold">Produto não encontrado</h1>
+      <p className="mt-3 text-muted-foreground">
+        O equipamento que você procura não está mais disponível.
+      </p>
+      <Button asChild className="mt-6 rounded-full">
+        <Link to="/produtos">Voltar para o catálogo</Link>
+      </Button>
+    </div>
+  ),
+  errorComponent: ({ error, reset }) => (
+    <div className="mx-auto max-w-2xl px-4 py-24 text-center">
+      <h1 className="text-3xl font-extrabold">Algo deu errado</h1>
+      <p className="mt-3 text-muted-foreground">{error.message}</p>
+      <Button onClick={reset} className="mt-6 rounded-full">
+        Tentar novamente
+      </Button>
+    </div>
+  ),
+  component: ProductDetail,
+});
+
+function ProductDetail() {
+  const { product } = Route.useLoaderData();
+  const related = getRelatedProducts(product);
+  const categoryLabel =
+    categories.find((c) => c.slug === product.category)?.label ?? "";
+  const addItem = useCart((s) => s.addItem);
+  const setOpen = useCart((s) => s.setOpen);
+  const inCart = useCart((s) => s.items.some((i) => i.id === product.id));
+
+  function handleAdd() {
+    addItem({
+      id: product.id,
+      name: product.name,
+      category: product.category,
+      categoryLabel,
+    });
+    toast.success("Adicionado ao orçamento", {
+      description: product.name,
+      action: { label: "Ver", onClick: () => setOpen(true) },
+    });
+  }
+
+  return (
+    <div>
+      <div className="mx-auto max-w-7xl px-4 pb-8 pt-8 sm:px-6 lg:px-8">
+        <Link
+          to="/produtos"
+          search={{ categoria: product.category }}
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Voltar para {categoryLabel}
+        </Link>
+      </div>
+
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid gap-12 lg:grid-cols-2">
+          <div className="lg:sticky lg:top-24 lg:self-start">
+            <ProductPlaceholder
+              category={product.category}
+              iconSize={160}
+              className="aspect-square"
+            />
+          </div>
+
+          <div>
+            <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+              {categoryLabel}
+            </span>
+            <h1 className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl text-balance">
+              {product.name}
+            </h1>
+            <p className="mt-5 text-lg text-muted-foreground">
+              {product.description}
+            </p>
+
+            {product.monthlyRent && (
+              <div className="mt-8 inline-flex items-center gap-3 rounded-2xl border border-border bg-muted/40 px-5 py-3">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Locação a partir de
+                  </p>
+                  <p className="text-lg font-extrabold tracking-tight">
+                    R${" "}
+                    {product.monthlyRent.toLocaleString("pt-BR", {
+                      maximumFractionDigits: 0,
+                    })}
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {" "}
+                      / mês
+                    </span>
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-8">
+              <Button
+                size="lg"
+                onClick={handleAdd}
+                className="w-full rounded-full bg-primary text-primary-foreground hover:opacity-90 sm:w-auto"
+              >
+                {inCart ? (
+                  <>
+                    <Check className="mr-1.5 h-4 w-4" />
+                    Adicionar mais 1 ao orçamento
+                  </>
+                ) : (
+                  <>
+                    <Plus className="mr-1.5 h-4 w-4" />
+                    Adicionar à lista de locação
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Especificações */}
+            <div className="mt-12">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground">
+                Especificações técnicas
+              </h2>
+              <dl className="mt-4 divide-y divide-border rounded-2xl border border-border bg-card">
+                {product.specs.map((s: { label: string; value: string }) => (
+                  <div
+                    key={s.label}
+                    className="flex items-center justify-between gap-4 px-5 py-3"
+                  >
+                    <dt className="text-sm text-muted-foreground">{s.label}</dt>
+                    <dd className="text-sm font-semibold">{s.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CROSS-SELL */}
+      {related.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+          <div className="flex items-end justify-between">
+            <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
+              Equipamentos da mesma linha
+            </h2>
+            <Link
+              to="/produtos"
+              search={{ categoria: product.category }}
+              className="hidden text-sm font-semibold text-primary hover:underline sm:inline"
+            >
+              Ver tudo
+            </Link>
+          </div>
+          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {related.slice(0, 3).map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
