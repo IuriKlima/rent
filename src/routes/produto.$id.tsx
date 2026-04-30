@@ -163,7 +163,7 @@ function ProductDetail() {
                 Especificações técnicas
               </h2>
               <dl className="mt-4 divide-y divide-border rounded-2xl border border-border bg-card">
-                {product.specs.map((s) => (
+                {product.specs.map((s: { label: string; value: string }) => (
                   <div
                     key={s.label}
                     className="flex items-center justify-between gap-4 px-5 py-3"
