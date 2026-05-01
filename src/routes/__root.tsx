@@ -1,10 +1,12 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { Outlet, Link, createRootRoute, HeadContent, Scripts, useRouterState } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 import appCss from "../styles.css?url";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { CartDrawer } from "@/components/layout/CartDrawer";
 import { Toaster } from "@/components/ui/sonner";
+import { useAnalytics } from "@/store/analytics";
 
 function NotFoundComponent() {
   return (
@@ -91,6 +93,33 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const trackVisit = useAnalytics((s) => s.trackVisit);
+  const isAdmin = pathname.startsWith("/admin");
+
+  useEffect(() => {
+    // Não conta visitas dentro do painel admin
+    if (!isAdmin) trackVisit(pathname);
+  }, [pathname, isAdmin, trackVisit]);
+
+  // Admin tem layout próprio (sem header/footer/cart do site)
+  if (isAdmin) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Outlet />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            classNames: {
+              toast:
+                "glass !rounded-2xl !border-border !text-foreground !shadow-xl",
+            },
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />

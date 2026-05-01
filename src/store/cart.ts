@@ -56,16 +56,27 @@ export const useCart = create<CartState>()(
 
 export const WHATSAPP_NUMBER = "5511999999999"; // TODO: substituir pelo número real
 
-export function buildWhatsappUrl(items: CartItem[]): string {
-  const baseMsg =
-    "Olá, sou síndico e tenho interesse em um projeto de locação para o meu condomínio com os seguintes equipamentos: ";
+export type WhatsappLead = {
+  name: string;
+  condominio: string;
+  phone: string;
+  email: string;
+};
+
+export function buildWhatsappUrl(items: CartItem[], lead?: WhatsappLead): string {
   const itemsStr =
     items.length > 0
       ? items
           .map((i) => `${i.quantity}x ${i.name} (${i.categoryLabel})`)
           .join(", ")
       : "(nenhum item selecionado)";
-  const msg = `${baseMsg}${itemsStr}.`;
+
+  let msg = `Olá, sou síndico e tenho interesse em um projeto de locação para o meu condomínio com os seguintes equipamentos: ${itemsStr}.`;
+
+  if (lead) {
+    msg += `\n\n— Dados de contato —\nNome: ${lead.name}\nCondomínio: ${lead.condominio}\nTelefone: ${lead.phone}\nE-mail: ${lead.email}`;
+  }
+
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
 }
 

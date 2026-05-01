@@ -11,6 +11,7 @@ import {
 import { categories, products } from "@/data/products";
 import { ProductPlaceholder } from "@/components/product/ProductPlaceholder";
 import { Button } from "@/components/ui/button";
+import heroAcademia from "@/assets/hero-academia.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -65,103 +66,102 @@ const benefits = [
 function HomePage() {
   return (
     <div>
-      {/* HERO */}
+      {/* HERO com banner */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background to-muted/40" />
-        <div className="absolute -top-40 right-0 -z-10 h-[480px] w-[480px] rounded-full bg-primary/10 blur-3xl" />
+        {/* Background image */}
+        <div className="absolute inset-0 -z-10">
+          <img
+            src={heroAcademia}
+            alt="Academia premium projetada e instalada pela Rent Fitness em condomínio de alto padrão"
+            width={1920}
+            height={1080}
+            className="h-full w-full object-cover"
+          />
+          {/* Overlays para legibilidade */}
+          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/85 to-background/30" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+        </div>
 
-        <div className="mx-auto max-w-7xl px-4 pb-20 pt-16 sm:px-6 lg:px-8 lg:pt-24">
-          <div className="grid items-center gap-12 lg:grid-cols-2">
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <span className="inline-flex items-center gap-2 rounded-full border border-border bg-background/60 px-3 py-1 text-xs font-medium text-foreground/70 backdrop-blur">
-                <Sparkles className="h-3.5 w-3.5 text-primary" />
-                Locação premium para condomínios
-              </span>
-              <h1 className="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight text-balance sm:text-5xl lg:text-6xl">
-                Eleve o padrão do seu condomínio com uma{" "}
-                <span className="text-primary">academia profissional</span>.
-              </h1>
-              <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-                Equipamentos de alto padrão sob locação, com manutenção inclusa
-                e atualização periódica. Custo fixo, zero depreciação e a
-                experiência de uma academia high-end no seu empreendimento.
-              </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Button
-                  asChild
-                  size="lg"
-                  className="rounded-full bg-primary text-primary-foreground hover:opacity-90"
-                >
-                  <Link to="/produtos">
-                    Montar projeto / catálogo{" "}
-                    <ArrowRight className="ml-1.5 h-4 w-4" />
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  size="lg"
-                  variant="outline"
-                  className="rounded-full"
-                >
-                  <Link to="/contato">Falar com consultor</Link>
-                </Button>
-              </div>
+        <div className="mx-auto max-w-7xl px-4 pb-24 pt-16 sm:px-6 lg:px-8 lg:pb-32 lg:pt-28">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="max-w-2xl"
+          >
+            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-background/80 px-3 py-1 text-xs font-medium text-foreground/70 backdrop-blur">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              Locação premium para condomínios
+            </span>
+            <h1 className="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight text-balance sm:text-5xl lg:text-6xl">
+              Eleve o padrão do seu condomínio com uma{" "}
+              <span className="text-primary">academia profissional</span>.
+            </h1>
+            <p className="mt-6 max-w-xl text-lg text-foreground/75">
+              Equipamentos de alto padrão sob locação, com manutenção inclusa
+              e atualização periódica. Custo fixo, zero depreciação e a
+              experiência de uma academia high-end no seu empreendimento.
+            </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button
+                asChild
+                size="lg"
+                className="rounded-full bg-primary text-primary-foreground hover:opacity-90"
+              >
+                <Link to="/produtos">
+                  Montar projeto / catálogo{" "}
+                  <ArrowRight className="ml-1.5 h-4 w-4" />
+                </Link>
+              </Button>
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="rounded-full bg-background/70 backdrop-blur"
+              >
+                <Link to="/contato">Falar com consultor</Link>
+              </Button>
+            </div>
 
-              <dl className="mt-12 grid grid-cols-3 gap-6 border-t border-border pt-8">
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-                    Linhas
-                  </dt>
-                  <dd className="mt-1 text-2xl font-extrabold tracking-tight">
-                    4
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-                    Equipamentos
-                  </dt>
-                  <dd className="mt-1 text-2xl font-extrabold tracking-tight">
-                    {products.length}+
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-                    Manutenção
-                  </dt>
-                  <dd className="mt-1 text-2xl font-extrabold tracking-tight">
-                    Inclusa
-                  </dd>
-                </div>
-              </dl>
-            </motion.div>
+            <dl className="mt-12 grid max-w-lg grid-cols-3 gap-6 border-t border-border/70 pt-8">
+              <div>
+                <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Linhas
+                </dt>
+                <dd className="mt-1 text-2xl font-extrabold tracking-tight">4</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Equipamentos
+                </dt>
+                <dd className="mt-1 text-2xl font-extrabold tracking-tight">
+                  {products.length}+
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Manutenção
+                </dt>
+                <dd className="mt-1 text-2xl font-extrabold tracking-tight">
+                  Inclusa
+                </dd>
+              </div>
+            </dl>
+          </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="relative"
-            >
-              <div className="grid grid-cols-2 gap-4">
-                <ProductPlaceholder category="cardio" className="aspect-[3/4]" />
-                <div className="space-y-4 pt-10">
-                  <ProductPlaceholder category="evo" />
-                  <ProductPlaceholder category="select" variant="alt" />
-                </div>
-              </div>
-              <div className="absolute -bottom-6 left-6 right-6 rounded-2xl glass px-5 py-4 shadow-xl">
-                <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-                  A partir de
-                </p>
-                <p className="text-lg font-extrabold tracking-tight">
-                  Projetos sob medida para o seu condomínio
-                </p>
-              </div>
-            </motion.div>
-          </div>
+          {/* Caption flutuante destacando que é projeto Rent Fitness */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="mt-12 inline-flex items-center gap-3 rounded-2xl glass px-5 py-3 shadow-xl"
+          >
+            <div className="h-2 w-2 rounded-full bg-primary" />
+            <p className="text-sm font-medium text-foreground">
+              Projeto entregue pela Rent Fitness — academia panorâmica em
+              condomínio de alto padrão.
+            </p>
+          </motion.div>
         </div>
       </section>
 

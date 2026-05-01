@@ -1,41 +1,162 @@
 import { create } from "zustand";
-import { products as seedProducts, type Product } from "@/data/products";
+import { persist } from "zustand/middleware";
+import {
+  products as seedProducts,
+  categories as seedCategories,
+  type Product,
+  type Category,
+  type CategorySlug,
+} from "@/data/products";
 
 type AdminState = {
   products: Product[];
+  categories: Category[];
   unlocked: boolean;
   unlock: (password: string) => boolean;
   lock: () => void;
-  updateProduct: (id: string, patch: Partial<Pick<Product, "name" | "monthlyRent" | "active">>) => void;
+  // products
+  updateProduct: (
+    id: string,
+    patch: Partial<Pick<Product, "name" | "monthlyRent" | "active" | "category" | "shortDescription">>,
+  ) => void;
   toggleActive: (id: string) => void;
+  addProduct: (
+    p: Omit<Product, "id" | "specs" | "relatedIds"> & {
+      specs?: Product["specs"];
+      relatedIds?: string[];
+    },
+  ) => void;
+  addProductsBulk: (
+    items: Array<Pick<Product, "name" | "category"> & Partial<Pick<Product, "shortDescription" | "monthlyRent">>>,
+  ) => number;
+  removeProduct: (id: string) => void;
+  // categories
+  addCategory: (c: Omit<Category, "slug"> & { slug: string }) => void;
+  updateCategory: (slug: CategorySlug, patch: Partial<Omit<Category, "slug">>) => void;
+  removeCategory: (slug: CategorySlug) => void;
+  // reset
   reset: () => void;
 };
 
 const ADMIN_PASSWORD = "rentfit2026";
 
-export const useAdminStore = create<AdminState>((set) => ({
-  products: seedProducts.map((p) => ({ ...p, active: p.active ?? true })),
-  unlocked: false,
-  unlock: (password) => {
-    if (password === ADMIN_PASSWORD) {
-      set({ unlocked: true });
-      return true;
-    }
-    return false;
-  },
-  lock: () => set({ unlocked: false }),
-  updateProduct: (id, patch) =>
-    set((state) => ({
-      products: state.products.map((p) => (p.id === id ? { ...p, ...patch } : p)),
-    })),
-  toggleActive: (id) =>
-    set((state) => ({
-      products: state.products.map((p) =>
-        p.id === id ? { ...p, active: !(p.active ?? true) } : p,
-      ),
-    })),
-  reset: () =>
-    set({
+function slugify(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+}
+
+export const useAdminStore = create<AdminState>()(
+  persist(
+    (set, get) => ({
       products: seedProducts.map((p) => ({ ...p, active: p.active ?? true })),
+      categories: [...seedCategories],
+      unlocked: false,
+      unlock: (password) => {
+        if (password === ADMIN_PASSWORD) {
+          set({ unlocked: true });
+          return true;
+        }
+        return false;
+      },
+      lock: () => set({ unlocked: false }),
+
+      updateProduct: (id, patch) =>
+        set((state) => ({
+          products: state.products.map((p) => (p.id === id ? { ...p, ...patch } : p)),
+        })),
+
+      toggleActive: (id) =>
+        set((state) => ({
+          products: state.products.map((p) =>
+            p.id === id ? { ...p, active: !(p.active ?? true) } : p,
+          ),
+        })),
+
+      addProduct: (p) => {
+        const id = `${p.category}-${slugify(p.name)}-${Date.now().toString(36)}`;
+        const newProduct: Product = {
+          id,
+          name: p.name,
+          category: p.category,
+          shortDescription: p.shortDescription ?? "",
+          description: p.description ?? "",
+          specs: p.specs ?? [],
+          relatedIds: p.relatedIds ?? [],
+          active: p.active ?? true,
+          monthlyRent: p.monthlyRent,
+        };
+        set((state) => ({ products: [newProduct, ...state.products] }));
+      },
+
+      addProductsBulk: (items) => {
+        const validCats = new Set(get().categories.map((c) => c.slug));
+        const valid = items.filter((i) => i.name?.trim() && validCats.has(i.category));
+        const newProducts: Product[] = valid.map((i, idx) => ({
+          id: `${i.category}-${slugify(i.name)}-${Date.now().toString(36)}-${idx}`,
+          name: i.name.trim(),
+          category: i.category,
+          shortDescription: i.shortDescription ?? "",
+          description: "",
+          specs: [],
+          relatedIds: [],
+          active: true,
+          monthlyRent: i.monthlyRent,
+        }));
+        set((state) => ({ products: [...newProducts, ...state.products] }));
+        return newProducts.length;
+      },
+
+      removeProduct: (id) =>
+        set((state) => ({ products: state.products.filter((p) => p.id !== id) })),
+
+      addCategory: (c) => {
+        const slug = (slugify(c.slug) || slugify(c.label)) as CategorySlug;
+        if (!slug) return;
+        if (get().categories.some((x) => x.slug === slug)) return;
+        set((state) => ({
+          categories: [
+            ...state.categories,
+            {
+              slug,
+              label: c.label,
+              short: c.short,
+              description: c.description,
+            },
+          ],
+        }));
+      },
+
+      updateCategory: (slug, patch) =>
+        set((state) => ({
+          categories: state.categories.map((c) =>
+            c.slug === slug ? { ...c, ...patch } : c,
+          ),
+        })),
+
+      removeCategory: (slug) =>
+        set((state) => ({
+          categories: state.categories.filter((c) => c.slug !== slug),
+          // não remove produtos automaticamente; apenas oculta da listagem por categoria
+        })),
+
+      reset: () =>
+        set({
+          products: seedProducts.map((p) => ({ ...p, active: p.active ?? true })),
+          categories: [...seedCategories],
+        }),
     }),
-}));
+    {
+      name: "rentfit-admin",
+      // Não persiste o estado de "unlocked" — exige login a cada sessão
+      partialize: (state) => ({
+        products: state.products,
+        categories: state.categories,
+      }),
+    },
+  ),
+);
