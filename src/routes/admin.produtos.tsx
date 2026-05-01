@@ -116,7 +116,13 @@ function ProductsPage() {
           <SingleCreateDialog
             categories={categories}
             onSubmit={(p) => {
-              addProduct(p);
+              addProduct({
+                name: p.name,
+                category: p.category,
+                shortDescription: p.shortDescription ?? "",
+                description: p.description ?? "",
+                monthlyRent: p.monthlyRent,
+              });
               toast.success("Produto criado");
             }}
           />
