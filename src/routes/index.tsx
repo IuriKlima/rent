@@ -11,6 +11,7 @@ import {
 import { categories, products } from "@/data/products";
 import { ProductPlaceholder } from "@/components/product/ProductPlaceholder";
 import { Button } from "@/components/ui/button";
+import heroAcademia from "@/assets/hero-academia.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
