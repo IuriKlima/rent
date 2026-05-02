@@ -11,9 +11,12 @@ import {
 type AdminState = {
   products: Product[];
   categories: Category[];
+  heroImage?: string;
   unlocked: boolean;
   unlock: (password: string) => boolean;
   lock: () => void;
+  setHeroImage: (image: string) => void;
+  clearHeroImage: () => void;
   // products
   updateProduct: (
     id: string,
@@ -55,6 +58,7 @@ export const useAdminStore = create<AdminState>()(
     (set, get) => ({
       products: seedProducts.map((p) => ({ ...p, active: p.active ?? true })),
       categories: [...seedCategories],
+      heroImage: undefined,
       unlocked: false,
       unlock: (password) => {
         if (password === ADMIN_PASSWORD) {
@@ -64,6 +68,8 @@ export const useAdminStore = create<AdminState>()(
         return false;
       },
       lock: () => set({ unlocked: false }),
+      setHeroImage: (image) => set({ heroImage: image }),
+      clearHeroImage: () => set({ heroImage: undefined }),
 
       updateProduct: (id, patch) =>
         set((state) => ({
@@ -156,6 +162,7 @@ export const useAdminStore = create<AdminState>()(
       partialize: (state) => ({
         products: state.products,
         categories: state.categories,
+        heroImage: state.heroImage,
       }),
     },
   ),
