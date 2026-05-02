@@ -39,18 +39,13 @@ function DashboardPage() {
   const visits = useAnalytics((s) => s.visits);
   const quotes = useQuotes((s) => s.quotes);
 
-  function handleHeroUpload(event: React.ChangeEvent<HTMLInputElement>) {
+  async function handleHeroUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
     if (!file.type.startsWith("image/")) return;
-    if (file.size > 3 * 1024 * 1024) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") setHeroImage(reader.result);
-    };
-    reader.readAsDataURL(file);
+    const image = await resizeImage(file, 1920, 1080, 0.82);
+    setHeroImage(image);
   }
 
   const activeProducts = products.filter((p) => p.active ?? true).length;
@@ -302,4 +297,27 @@ function DashboardPage() {
       </div>
     </div>
   );
+}
+
+function resizeImage(file: File, maxWidth: number, maxHeight: number, quality: number) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Não foi possível ler a imagem."));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Imagem inválida."));
+      img.onload = () => {
+        const scale = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+        const width = Math.round(img.width * scale);
+        const height = Math.round(img.height * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d")?.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
+  });
 }
