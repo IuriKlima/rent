@@ -61,7 +61,7 @@ export const useAdminStore = create<AdminState>()(
       heroImage: undefined,
       unlocked: false,
       unlock: (password) => {
-        if (password === ADMIN_PASSWORD) {
+        if (password.trim() === ADMIN_PASSWORD) {
           set({ unlocked: true });
           return true;
         }
