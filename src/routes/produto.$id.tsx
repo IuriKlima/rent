@@ -8,7 +8,7 @@ import { ProductPlaceholder } from "@/components/product/ProductPlaceholder";
 import { ProductCard } from "@/components/product/ProductCard";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/store/cart";
-import { ArrowLeft, Plus, Check, Sparkles } from "lucide-react";
+import { ArrowLeft, Plus, Check, BadgeDollarSign } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/produto/$id")({
@@ -118,10 +118,10 @@ function ProductDetail() {
 
             {product.monthlyRent && (
               <div className="mt-8 inline-flex items-center gap-3 rounded-2xl border border-border bg-muted/40 px-5 py-3">
-                <Sparkles className="h-4 w-4 text-primary" />
+                <BadgeDollarSign className="h-4 w-4 text-primary" />
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Locação a partir de
+                    Locação mensal
                   </p>
                   <p className="text-lg font-extrabold tracking-tight">
                     R${" "}
