@@ -10,7 +10,12 @@ import {
   Tags,
   TrendingUp,
   ArrowRight,
+  ImageIcon,
+  Upload,
+  Trash2,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import heroAcademia from "@/assets/hero-academia.jpg";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -28,8 +33,25 @@ export const Route = createFileRoute("/admin/")({
 function DashboardPage() {
   const products = useAdminStore((s) => s.products);
   const categories = useAdminStore((s) => s.categories);
+  const heroImage = useAdminStore((s) => s.heroImage);
+  const setHeroImage = useAdminStore((s) => s.setHeroImage);
+  const clearHeroImage = useAdminStore((s) => s.clearHeroImage);
   const visits = useAnalytics((s) => s.visits);
   const quotes = useQuotes((s) => s.quotes);
+
+  function handleHeroUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return;
+    if (file.size > 3 * 1024 * 1024) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") setHeroImage(reader.result);
+    };
+    reader.readAsDataURL(file);
+  }
 
   const activeProducts = products.filter((p) => p.active ?? true).length;
   const newQuotes = quotes.filter((q) => q.status === "novo").length;
@@ -91,6 +113,39 @@ function DashboardPage() {
           Acompanhe o tráfego do site e os pedidos de orçamento.
         </p>
       </header>
+
+      <section className="grid gap-4 rounded-2xl border border-border bg-card p-5 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div>
+          <div className="flex items-center gap-2 text-primary">
+            <ImageIcon className="h-4 w-4" />
+            <h2 className="text-sm font-bold uppercase tracking-wider">Banner da Home</h2>
+          </div>
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+            Troque a imagem de fundo da hero sem mexer no código. Use JPG, PNG ou WebP até 3MB.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button asChild className="rounded-full bg-primary text-primary-foreground hover:opacity-90">
+              <label>
+                <Upload className="mr-1.5 h-4 w-4" />
+                Enviar imagem
+                <input type="file" accept="image/*" className="sr-only" onChange={handleHeroUpload} />
+              </label>
+            </Button>
+            {heroImage && (
+              <Button variant="outline" className="rounded-full" onClick={clearHeroImage}>
+                <Trash2 className="mr-1.5 h-4 w-4" />
+                Usar padrão
+              </Button>
+            )}
+          </div>
+        </div>
+        <img
+          src={heroImage ?? heroAcademia}
+          alt="Prévia do banner da página inicial"
+          className="h-40 w-full rounded-xl object-cover"
+          loading="lazy"
+        />
+      </section>
 
       {/* KPIs */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
