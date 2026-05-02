@@ -29,6 +29,7 @@ export function Footer() {
               <li><Link to="/" className="hover:text-primary transition">Início</Link></li>
               <li><Link to="/produtos" className="hover:text-primary transition">Catálogo</Link></li>
               <li><Link to="/contato" className="hover:text-primary transition">Contato</Link></li>
+              <li><Link to="/admin" className="hover:text-primary transition">Admin</Link></li>
             </ul>
           </div>
 

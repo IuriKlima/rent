@@ -12,6 +12,7 @@ import { categories, products } from "@/data/products";
 import { ProductPlaceholder } from "@/components/product/ProductPlaceholder";
 import { Button } from "@/components/ui/button";
 import heroAcademia from "@/assets/hero-academia.jpg";
+import { useAdminStore } from "@/store/admin";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -64,6 +65,8 @@ const benefits = [
 ];
 
 function HomePage() {
+  const heroImage = useAdminStore((s) => s.heroImage) ?? heroAcademia;
+
   return (
     <div>
       {/* HERO com banner */}
@@ -71,10 +74,11 @@ function HomePage() {
         {/* Background image */}
         <div className="absolute inset-0 -z-10">
           <img
-            src={heroAcademia}
+            src={heroImage}
             alt="Academia premium projetada e instalada pela Rent Fitness em condomínio de alto padrão"
             width={1920}
             height={1080}
+            fetchPriority="high"
             className="h-full w-full object-cover"
           />
           {/* Overlays para legibilidade */}
