@@ -9,6 +9,10 @@ ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=3000
 
+COPY server.mjs ./server.mjs
+COPY package.json ./package.json
+RUN npm install express --omit=dev --legacy-peer-deps
+
 EXPOSE 3000
 
-CMD ["node", "dist/server/server.js"]
+CMD ["node", "server.mjs"]
