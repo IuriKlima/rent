@@ -5,6 +5,8 @@ import { useCart } from "@/store/cart";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+import logo from "@/assets/logo.png";
+
 const navLinks = [
   { to: "/", label: "Início" },
   { to: "/produtos", label: "Catálogo" },
@@ -23,12 +25,7 @@ export function Header() {
     <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex items-center gap-2 group">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary text-primary font-extrabold">
-            R
-          </div>
-          <span className="text-lg font-extrabold tracking-tight">
-            Rent<span className="text-primary">Fitness</span>
-          </span>
+          <img src={logo} alt="Rent Fitness" className="h-10 w-auto" />
         </Link>
 
         <nav className="hidden md:flex items-center gap-1">

@@ -37,7 +37,19 @@ import {
   Trash2,
   Search,
   FileSpreadsheet,
+  ImagePlus,
+  ArrowRightLeft,
+  ChevronDown,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -53,11 +65,14 @@ function ProductsPage() {
     toggleActive,
     addProduct,
     addProductsBulk,
+    bulkUpdateProducts,
+    bulkRemoveProducts,
     removeProduct,
   } = useAdminStore();
 
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState<string>("all");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const filtered = useMemo(() => {
     return products.filter((p) => {
@@ -66,6 +81,34 @@ function ProductsPage() {
       return matchSearch && matchCat;
     });
   }, [products, search, filterCat]);
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filtered.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filtered.map((p) => p.id));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  };
+
+  async function handleImageUpload(id: string, file: File) {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Arquivo inválido");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64 = e.target?.result as string;
+      updateProduct(id, { image: base64 });
+      toast.success("Imagem atualizada");
+    };
+    reader.readAsDataURL(file);
+  }
 
   // edit-in-place
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -155,10 +198,107 @@ function ProductsPage() {
         </Select>
       </div>
 
+      {/* Bulk actions bar */}
+      {selectedIds.length > 0 && (
+        <div className="flex animate-in fade-in slide-in-from-top-4 items-center justify-between rounded-2xl border border-primary/20 bg-primary/5 p-4 backdrop-blur-sm">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-bold text-primary">
+              {selectedIds.length} selecionado{selectedIds.length === 1 ? "" : "s"}
+            </span>
+            <div className="h-4 w-px bg-primary/20" />
+            <div className="flex gap-1.5">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 rounded-full text-xs font-semibold hover:bg-primary/10"
+                onClick={() => {
+                  bulkUpdateProducts(selectedIds, { active: true });
+                  toast.success(`${selectedIds.length} produtos ativados`);
+                  setSelectedIds([]);
+                }}
+              >
+                Ativar
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 rounded-full text-xs font-semibold hover:bg-primary/10"
+                onClick={() => {
+                  bulkUpdateProducts(selectedIds, { active: false });
+                  toast.success(`${selectedIds.length} produtos inativados`);
+                  setSelectedIds([]);
+                }}
+              >
+                Inativar
+              </Button>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 rounded-full text-xs font-semibold hover:bg-primary/10"
+                  >
+                    Mudar categoria <ChevronDown className="ml-1 h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56">
+                  <DropdownMenuLabel>Mover para...</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {categories.map((c) => (
+                    <DropdownMenuItem
+                      key={c.slug}
+                      onClick={() => {
+                        bulkUpdateProducts(selectedIds, { category: c.slug });
+                        toast.success(`Categoria alterada para ${c.label}`);
+                        setSelectedIds([]);
+                      }}
+                    >
+                      {c.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 rounded-full text-xs font-semibold text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => {
+                  if (confirm(`Excluir ${selectedIds.length} produtos selecionados?`)) {
+                    bulkRemoveProducts(selectedIds);
+                    toast.success(`${selectedIds.length} produtos removidos`);
+                    setSelectedIds([]);
+                  }
+                }}
+              >
+                Excluir
+              </Button>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 rounded-full text-xs text-muted-foreground"
+            onClick={() => setSelectedIds([])}
+          >
+            Cancelar
+          </Button>
+        </div>
+      )}
+
       <div className="overflow-hidden rounded-2xl border border-border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">
+                <Checkbox
+                  checked={selectedIds.length === filtered.length && filtered.length > 0}
+                  onCheckedChange={toggleSelectAll}
+                  aria-label="Selecionar todos"
+                />
+              </TableHead>
+              <TableHead className="w-16">Foto</TableHead>
               <TableHead>Produto</TableHead>
               <TableHead>Categoria</TableHead>
               <TableHead className="text-right">Locação / mês</TableHead>
@@ -169,7 +309,7 @@ function ProductsPage() {
           <TableBody>
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="py-10 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
                   Nenhum produto encontrado.
                 </TableCell>
               </TableRow>
@@ -179,7 +319,37 @@ function ProductsPage() {
               const isEditing = editingId === p.id;
               const active = p.active ?? true;
               return (
-                <TableRow key={p.id} className={cn(!active && "opacity-50")}>
+                <TableRow key={p.id} className={cn(!active && "opacity-50", selectedIds.includes(p.id) && "bg-primary/5")}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedIds.includes(p.id)}
+                      onCheckedChange={() => toggleSelect(p.id)}
+                      aria-label={`Selecionar ${p.name}`}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <div className="group relative h-12 w-12 overflow-hidden rounded-lg bg-muted">
+                      {p.image ? (
+                        <img src={p.image} alt={p.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <ImagePlus className="h-4 w-4 text-muted-foreground/50" />
+                        </div>
+                      )}
+                      <label className="absolute inset-0 flex cursor-pointer items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                        <Input
+                          type="file"
+                          className="sr-only"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleImageUpload(p.id, file);
+                          }}
+                        />
+                        <ImagePlus className="h-4 w-4 text-white" />
+                      </label>
+                    </div>
+                  </TableCell>
                   <TableCell>
                     {isEditing ? (
                       <Input

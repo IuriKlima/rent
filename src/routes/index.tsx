@@ -11,7 +11,8 @@ import {
 import { categories, products } from "@/data/products";
 import { ProductPlaceholder } from "@/components/product/ProductPlaceholder";
 import { Button } from "@/components/ui/button";
-import heroAcademia from "@/assets/hero-academia.jpg";
+import { useEffect, useState } from "react";
+import heroAcademia from "@/assets/hero-rent-fitness.png";
 import { useAdminStore } from "@/store/admin";
 
 export const Route = createFileRoute("/")({
@@ -65,7 +66,14 @@ const benefits = [
 ];
 
 function HomePage() {
-  const heroImage = useAdminStore((s) => s.heroImage) ?? heroAcademia;
+  const storeHeroImage = useAdminStore((s) => s.heroImage);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const heroImage = (mounted && storeHeroImage) ? storeHeroImage : heroAcademia;
 
   return (
     <div>
@@ -81,9 +89,9 @@ function HomePage() {
             fetchPriority="high"
             className="h-full w-full object-cover"
           />
-          {/* Overlays para legibilidade */}
-          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/85 to-background/30" />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+          {/* Overlays para legibilidade — Usando preto direto para garantir compatibilidade */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         </div>
 
         <div className="mx-auto max-w-7xl px-4 pb-24 pt-16 sm:px-6 lg:px-8 lg:pb-32 lg:pt-28">

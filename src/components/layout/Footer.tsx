@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { Mail, Phone, MapPin } from "lucide-react";
 
+import logo from "@/assets/logo.png";
+
 export function Footer() {
   return (
     <footer className="mt-24 bg-secondary text-secondary-foreground">
@@ -8,12 +10,7 @@ export function Footer() {
         <div className="grid gap-12 md:grid-cols-4">
           <div className="md:col-span-2">
             <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground font-extrabold">
-                R
-              </div>
-              <span className="text-xl font-extrabold tracking-tight">
-                Rent<span className="text-primary">Fitness</span>
-              </span>
+              <img src={logo} alt="Rent Fitness" className="h-12 w-auto brightness-0 invert" />
             </div>
             <p className="mt-4 max-w-md text-sm text-white/60">
               Locação de academias profissionais para condomínios de alto padrão.

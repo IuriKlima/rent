@@ -20,18 +20,21 @@ type AdminState = {
   // products
   updateProduct: (
     id: string,
-    patch: Partial<Pick<Product, "name" | "monthlyRent" | "active" | "category" | "shortDescription">>,
+    patch: Partial<Pick<Product, "name" | "monthlyRent" | "active" | "category" | "shortDescription" | "image">>,
   ) => void;
   toggleActive: (id: string) => void;
   addProduct: (
     p: Omit<Product, "id" | "specs" | "relatedIds"> & {
       specs?: Product["specs"];
       relatedIds?: string[];
+      image?: string;
     },
   ) => void;
   addProductsBulk: (
-    items: Array<Pick<Product, "name" | "category"> & Partial<Pick<Product, "shortDescription" | "monthlyRent">>>,
+    items: Array<Pick<Product, "name" | "category"> & Partial<Pick<Product, "shortDescription" | "monthlyRent" | "image">>>,
   ) => number;
+  bulkUpdateProducts: (ids: string[], patch: Partial<Pick<Product, "active" | "category" | "monthlyRent">>) => void;
+  bulkRemoveProducts: (ids: string[]) => void;
   removeProduct: (id: string) => void;
   // categories
   addCategory: (c: Omit<Category, "slug"> & { slug: string }) => void;
@@ -95,6 +98,7 @@ export const useAdminStore = create<AdminState>()(
           relatedIds: p.relatedIds ?? [],
           active: p.active ?? true,
           monthlyRent: p.monthlyRent,
+          image: p.image,
         };
         set((state) => ({ products: [newProduct, ...state.products] }));
       },
@@ -112,10 +116,21 @@ export const useAdminStore = create<AdminState>()(
           relatedIds: [],
           active: true,
           monthlyRent: i.monthlyRent,
+          image: i.image,
         }));
         set((state) => ({ products: [...newProducts, ...state.products] }));
         return newProducts.length;
       },
+
+      bulkUpdateProducts: (ids, patch) =>
+        set((state) => ({
+          products: state.products.map((p) => (ids.includes(p.id) ? { ...p, ...patch } : p)),
+        })),
+
+      bulkRemoveProducts: (ids) =>
+        set((state) => ({
+          products: state.products.filter((p) => !ids.includes(p.id)),
+        })),
 
       removeProduct: (id) =>
         set((state) => ({ products: state.products.filter((p) => p.id !== id) })),

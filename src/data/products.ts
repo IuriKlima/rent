@@ -17,6 +17,7 @@ export type Product = {
   relatedIds: string[];
   active?: boolean;
   monthlyRent?: number; // referência de aluguel mensal (R$)
+  image?: string; // base64 ou URL
 };
 
 export const categories: Category[] = [

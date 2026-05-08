@@ -42,7 +42,17 @@ export function ProductCard({ product }: { product: Product }) {
         className="block"
         aria-label={`Ver detalhes de ${product.name}`}
       >
-        <ProductPlaceholder category={product.category} className="rounded-none" />
+        {product.image ? (
+          <div className="aspect-[4/3] w-full overflow-hidden bg-muted">
+            <img
+              src={product.image}
+              alt={product.name}
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          </div>
+        ) : (
+          <ProductPlaceholder category={product.category} className="rounded-none" />
+        )}
       </Link>
       <div className="flex flex-1 flex-col p-5">
         <span className="text-[11px] font-semibold uppercase tracking-wider text-primary">
