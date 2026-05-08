@@ -36,7 +36,7 @@ type AdminState = {
   ) => void;
   addProductsBulk: (
     items: Array<Pick<Product, "name" | "category"> & Partial<Pick<Product, "shortDescription" | "monthlyRent" | "image">>>,
-  ) => number;
+  ) => Promise<number>;
   bulkUpdateProducts: (ids: string[], patch: Partial<Pick<Product, "active" | "category" | "monthlyRent">>) => void;
   bulkRemoveProducts: (ids: string[]) => void;
   removeProduct: (id: string) => void;
@@ -191,9 +191,10 @@ export const useAdminStore = create<AdminState>()(
         set((state) => ({ products: [newProduct, ...state.products] }));
       },
 
-      addProductsBulk: (items) => {
+      addProductsBulk: async (items) => {
         const validCats = new Set(get().categories.map((c) => c.slug));
         const valid = items.filter((i) => i.name?.trim() && validCats.has(i.category));
+        
         const newProducts: Product[] = valid.map((i, idx) => ({
           id: `${i.category}-${slugify(i.name)}-${Date.now().toString(36)}-${idx}`,
           name: i.name.trim(),
@@ -206,6 +207,28 @@ export const useAdminStore = create<AdminState>()(
           monthlyRent: i.monthlyRent,
           image: i.image,
         }));
+
+        const dbProducts = newProducts.map((p) => ({
+          id: p.id,
+          name: p.name,
+          category: p.category,
+          short_description: p.shortDescription,
+          description: p.description,
+          specs: p.specs,
+          related_ids: p.relatedIds,
+          active: p.active,
+          monthly_rent: p.monthlyRent,
+          image: p.image,
+        }));
+
+        if (dbProducts.length > 0) {
+          const { error } = await supabase.from('products').insert(dbProducts);
+          if (error) {
+            console.error("Error bulk creating products:", error);
+            return 0;
+          }
+        }
+
         set((state) => ({ products: [...newProducts, ...state.products] }));
         return newProducts.length;
       },

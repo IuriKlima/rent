@@ -151,15 +151,15 @@ function ProductsPage() {
         <div className="flex flex-wrap gap-2">
           <BulkCreateDialog
             categories={categories}
-            onSubmit={(items) => {
-              const created = addProductsBulk(items);
+            onSubmit={async (items) => {
+              const created = await addProductsBulk(items);
               toast.success(`${created} produto(s) criado(s) em massa`);
             }}
           />
           <SingleCreateDialog
             categories={categories}
-            onSubmit={(p) => {
-              addProduct({
+            onSubmit={async (p) => {
+              await addProduct({
                 name: p.name,
                 category: p.category,
                 shortDescription: p.shortDescription ?? "",
