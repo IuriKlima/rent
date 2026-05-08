@@ -8,6 +8,7 @@ import {
   type CategorySlug,
 } from "@/data/products";
 import { supabase } from "@/lib/supabase";
+import { useQuotes } from "./quotes";
 
 type AdminState = {
   products: Product[];
@@ -79,11 +80,26 @@ export const useAdminStore = create<AdminState>()(
         const { data: config } = await supabase.from('site_config').select('*');
         const hero = config?.find(c => c.key === 'hero')?.value?.image;
 
+        if (session) {
+          useQuotes.getState().fetchQuotes();
+        }
+
         set({ 
           user: session?.user ?? null,
           unlocked: !!session?.user,
           categories: (cats as any[]) || [],
-          products: (prods as any[]) || [],
+          products: (prods?.map(p => ({
+            id: p.id,
+            name: p.name,
+            category: p.category,
+            shortDescription: p.short_description,
+            description: p.description,
+            specs: p.specs,
+            relatedIds: p.related_ids,
+            active: p.active,
+            monthlyRent: p.monthly_rent,
+            image: p.image
+          })) as Product[]) || [],
           heroImage: hero || undefined
         });
 
@@ -121,8 +137,8 @@ export const useAdminStore = create<AdminState>()(
         if (patch.monthlyRent !== undefined) dbPatch.monthly_rent = patch.monthlyRent;
         if (patch.active !== undefined) dbPatch.active = patch.active;
         if (patch.category) dbPatch.category = patch.category;
-        if (patch.shortDescription) dbPatch.short_description = patch.shortDescription;
-        if (patch.image) dbPatch.image = patch.image;
+        if (patch.shortDescription !== undefined) dbPatch.short_description = patch.shortDescription;
+        if (patch.image !== undefined) dbPatch.image = patch.image;
 
         const { error } = await supabase.from('products').update(dbPatch).eq('id', id);
         if (error) throw error;
@@ -161,7 +177,17 @@ export const useAdminStore = create<AdminState>()(
         const { error } = await supabase.from('products').insert(dbProduct);
         if (error) throw error;
 
-        const newProduct: Product = { ...p, id, shortDescription: p.shortDescription ?? "", description: p.description ?? "", specs: p.specs ?? [], relatedIds: p.relatedIds ?? [], active: p.active ?? true };
+        const newProduct: Product = { 
+          ...p, 
+          id, 
+          shortDescription: p.shortDescription ?? "", 
+          description: p.description ?? "", 
+          specs: p.specs ?? [], 
+          relatedIds: p.relatedIds ?? [], 
+          active: p.active ?? true,
+          monthlyRent: p.monthlyRent,
+          image: p.image
+        };
         set((state) => ({ products: [newProduct, ...state.products] }));
       },
 

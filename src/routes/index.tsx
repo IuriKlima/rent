@@ -8,7 +8,6 @@ import {
   ArrowRight,
   Sparkles,
 } from "lucide-react";
-import { categories, products } from "@/data/products";
 import { ProductPlaceholder } from "@/components/product/ProductPlaceholder";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
@@ -67,6 +66,8 @@ const benefits = [
 
 function HomePage() {
   const storeHeroImage = useAdminStore((s) => s.heroImage);
+  const products = useAdminStore((s) => s.products);
+  const categories = useAdminStore((s) => s.categories);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {

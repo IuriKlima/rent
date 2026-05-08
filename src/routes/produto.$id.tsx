@@ -1,9 +1,9 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import {
-  getProductById,
-  getRelatedProducts,
-  categories,
+  type Product,
 } from "@/data/products";
+import { supabase } from "@/lib/supabase";
+import { useAdminStore } from "@/store/admin";
 import { ProductPlaceholder } from "@/components/product/ProductPlaceholder";
 import { ProductCard } from "@/components/product/ProductCard";
 import { Button } from "@/components/ui/button";
@@ -12,20 +12,62 @@ import { ArrowLeft, Plus, Check, BadgeDollarSign } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/produto/$id")({
-  loader: ({ params }) => {
-    const product = getProductById(params.id);
-    if (!product) throw notFound();
-    return { product };
+  loader: async ({ params }) => {
+    const { data: p, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', params.id)
+      .single();
+
+    if (error || !p) throw notFound();
+
+    const product: Product = {
+      id: p.id,
+      name: p.name,
+      category: p.category,
+      shortDescription: p.short_description,
+      description: p.description,
+      specs: p.specs,
+      relatedIds: p.related_ids,
+      active: p.active,
+      monthlyRent: p.monthly_rent,
+      image: p.image
+    };
+
+    // Fetch related
+    const { data: relatedData } = await supabase
+      .from('products')
+      .select('*')
+      .in('id', product.relatedIds);
+
+    const related: Product[] = (relatedData?.map(rp => ({
+      id: rp.id,
+      name: rp.name,
+      category: rp.category,
+      shortDescription: rp.short_description,
+      description: rp.description,
+      specs: rp.specs,
+      relatedIds: rp.related_ids,
+      active: rp.active,
+      monthlyRent: rp.monthly_rent,
+      image: rp.image
+    })) as Product[]) || [];
+
+    // Fetch categories for head/label
+    const { data: cats } = await supabase.from('categories').select('*');
+
+    return { product, related, categories: (cats as any[]) || [] };
   },
   head: ({ loaderData }) => {
     const product = loaderData?.product;
+    const categories = loaderData?.categories;
     if (!product) {
       return {
         meta: [{ title: "Produto não encontrado — Rent Fitness" }],
       };
     }
     const categoryLabel =
-      categories.find((c) => c.slug === product.category)?.label ?? "";
+      categories?.find((c: any) => c.slug === product.category)?.label ?? "";
     const title = `${product.name} — Rent Fitness`;
     const description = `${product.shortDescription} ${categoryLabel}.`;
     return {
@@ -61,10 +103,9 @@ export const Route = createFileRoute("/produto/$id")({
 });
 
 function ProductDetail() {
-  const { product } = Route.useLoaderData();
-  const related = getRelatedProducts(product);
+  const { product, related, categories } = Route.useLoaderData();
   const categoryLabel =
-    categories.find((c) => c.slug === product.category)?.label ?? "";
+    categories.find((c: any) => c.slug === product.category)?.label ?? "";
   const addItem = useCart((s) => s.addItem);
   const setOpen = useCart((s) => s.setOpen);
   const inCart = useCart((s) => s.items.some((i) => i.id === product.id));

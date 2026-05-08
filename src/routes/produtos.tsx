@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
-import { categories, products, type CategorySlug } from "@/data/products";
+import { type CategorySlug } from "@/data/products";
+import { useAdminStore } from "@/store/admin";
 import { ProductCard } from "@/components/product/ProductCard";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -35,13 +36,16 @@ export const Route = createFileRoute("/produtos")({
   component: ProductsPage,
 });
 
-const filters: { slug: CategorySlug | "todos"; label: string }[] = [
-  { slug: "todos", label: "Todos" },
-  ...categories.map((c) => ({ slug: c.slug, label: c.label })),
-];
-
 function ProductsPage() {
+  const products = useAdminStore((s) => s.products);
+  const categories = useAdminStore((s) => s.categories);
   const { categoria } = Route.useSearch();
+
+  const filters = [
+    { slug: "todos", label: "Todos" },
+    ...categories.map((c) => ({ slug: c.slug, label: c.label })),
+  ];
+
   const filtered =
     categoria === "todos"
       ? products
