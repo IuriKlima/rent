@@ -9,6 +9,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { useAnalytics } from "@/store/analytics";
 import { useAdminStore } from "@/store/admin";
 
+import { WhatsAppButton } from "@/components/layout/WhatsAppButton";
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -133,6 +135,7 @@ function RootComponent() {
       </main>
       <Footer />
       <CartDrawer />
+      <WhatsAppButton />
       <Toaster
         position="top-right"
         toastOptions={{

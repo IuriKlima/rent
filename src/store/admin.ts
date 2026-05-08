@@ -24,7 +24,7 @@ type AdminState = {
   // products
   updateProduct: (
     id: string,
-    patch: Partial<Pick<Product, "name" | "monthlyRent" | "active" | "category" | "shortDescription" | "image">>,
+    patch: Partial<Pick<Product, "name" | "monthlyRent" | "active" | "category" | "shortDescription" | "image" | "sku">>,
   ) => void;
   toggleActive: (id: string) => void;
   addProduct: (
@@ -35,8 +35,11 @@ type AdminState = {
     },
   ) => void;
   addProductsBulk: (
-    items: Array<Pick<Product, "name" | "category"> & Partial<Pick<Product, "shortDescription" | "monthlyRent" | "image">>>,
+    items: Array<Pick<Product, "name" | "category"> & Partial<Pick<Product, "shortDescription" | "monthlyRent" | "image" | "sku">>>,
   ) => Promise<number>;
+  bulkUpdateProductsByCSV: (
+    items: Array<{ sku: string } & Partial<Pick<Product, "name" | "category" | "shortDescription" | "monthlyRent">>>,
+  ) => Promise<{ updated: number, notFound: string[] }>;
   bulkUpdateProducts: (ids: string[], patch: Partial<Pick<Product, "active" | "category" | "monthlyRent">>) => void;
   bulkRemoveProducts: (ids: string[]) => void;
   removeProduct: (id: string) => void;
@@ -90,6 +93,7 @@ export const useAdminStore = create<AdminState>()(
           categories: (cats as any[]) || [],
           products: (prods?.map(p => ({
             id: p.id,
+            sku: p.sku,
             name: p.name,
             category: p.category,
             shortDescription: p.short_description,
@@ -133,10 +137,11 @@ export const useAdminStore = create<AdminState>()(
       updateProduct: async (id, patch) => {
         // Snake case for DB
         const dbPatch: any = {};
-        if (patch.name) dbPatch.name = patch.name;
+        if (patch.name !== undefined) dbPatch.name = patch.name;
+        if (patch.sku !== undefined) dbPatch.sku = patch.sku;
         if (patch.monthlyRent !== undefined) dbPatch.monthly_rent = patch.monthlyRent;
         if (patch.active !== undefined) dbPatch.active = patch.active;
-        if (patch.category) dbPatch.category = patch.category;
+        if (patch.category !== undefined) dbPatch.category = patch.category;
         if (patch.shortDescription !== undefined) dbPatch.short_description = patch.shortDescription;
         if (patch.image !== undefined) dbPatch.image = patch.image;
 
@@ -164,6 +169,7 @@ export const useAdminStore = create<AdminState>()(
         const id = `${p.category}-${slugify(p.name)}-${Date.now().toString(36)}`;
         const dbProduct = {
           id,
+          sku: p.sku,
           name: p.name,
           category: p.category,
           short_description: p.shortDescription ?? "",
@@ -197,6 +203,7 @@ export const useAdminStore = create<AdminState>()(
         
         const newProducts: Product[] = valid.map((i, idx) => ({
           id: `${i.category}-${slugify(i.name)}-${Date.now().toString(36)}-${idx}`,
+          sku: i.sku,
           name: i.name.trim(),
           category: i.category,
           shortDescription: i.shortDescription ?? "",
@@ -210,6 +217,7 @@ export const useAdminStore = create<AdminState>()(
 
         const dbProducts = newProducts.map((p) => ({
           id: p.id,
+          sku: p.sku,
           name: p.name,
           category: p.category,
           short_description: p.shortDescription,
@@ -231,6 +239,38 @@ export const useAdminStore = create<AdminState>()(
 
         set((state) => ({ products: [...newProducts, ...state.products] }));
         return newProducts.length;
+      },
+
+
+      bulkUpdateProductsByCSV: async (items) => {
+        let updated = 0;
+        const notFound: string[] = [];
+        
+        for (const item of items) {
+          const product = get().products.find(p => p.sku === item.sku);
+          if (!product) {
+            notFound.push(item.sku);
+            continue;
+          }
+
+          const patch: any = {};
+          if (item.name) patch.name = item.name;
+          if (item.category) patch.category = item.category;
+          if (item.shortDescription !== undefined) patch.short_description = item.shortDescription;
+          if (item.monthlyRent !== undefined) patch.monthly_rent = item.monthlyRent;
+
+          if (Object.keys(patch).length > 0) {
+            await supabase.from('products').update(patch).eq('id', product.id);
+            updated++;
+          }
+        }
+
+        // reload state after bulk update
+        if (updated > 0) {
+          await get().initialize();
+        }
+
+        return { updated, notFound };
       },
 
       bulkUpdateProducts: (ids, patch) =>

@@ -54,7 +54,7 @@ export const useCart = create<CartState>()(
   ),
 );
 
-export const WHATSAPP_NUMBER = "5511999999999"; // TODO: substituir pelo número real
+export const WHATSAPP_NUMBER = "5511924913426"; // TODO: substituir pelo número real
 
 export type WhatsappLead = {
   name: string;

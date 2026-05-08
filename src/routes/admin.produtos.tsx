@@ -65,6 +65,7 @@ function ProductsPage() {
     toggleActive,
     addProduct,
     addProductsBulk,
+    bulkUpdateProductsByCSV,
     bulkUpdateProducts,
     bulkRemoveProducts,
     removeProduct,
@@ -113,11 +114,13 @@ function ProductsPage() {
   // edit-in-place
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
+  const [draftSku, setDraftSku] = useState("");
   const [draftRent, setDraftRent] = useState("");
 
-  function startEdit(id: string, name: string, rent?: number) {
+  function startEdit(id: string, name: string, sku?: string, rent?: number) {
     setEditingId(id);
     setDraftName(name);
+    setDraftSku(sku ?? "");
     setDraftRent(rent?.toString() ?? "");
   }
   function cancelEdit() {
@@ -127,6 +130,7 @@ function ProductsPage() {
     const rent = draftRent ? Number(draftRent) : undefined;
     updateProduct(id, {
       name: draftName.trim() || undefined,
+      sku: draftSku.trim() || undefined,
       monthlyRent: Number.isFinite(rent) ? rent : undefined,
     });
     cancelEdit();
@@ -149,6 +153,18 @@ function ProductsPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <BulkUpdateDialog
+            categories={categories}
+            onSubmit={async (items) => {
+              const res = await bulkUpdateProductsByCSV(items);
+              if (res.updated > 0) {
+                toast.success(`${res.updated} produto(s) atualizado(s) em massa`);
+              }
+              if (res.notFound.length > 0) {
+                toast.error(`${res.notFound.length} SKU(s) não encontrado(s)`);
+              }
+            }}
+          />
           <BulkCreateDialog
             categories={categories}
             onSubmit={async (items) => {
@@ -161,6 +177,7 @@ function ProductsPage() {
             onSubmit={async (p) => {
               await addProduct({
                 name: p.name,
+                sku: p.sku,
                 category: p.category,
                 shortDescription: p.shortDescription ?? "",
                 description: p.description ?? "",
@@ -299,6 +316,7 @@ function ProductsPage() {
                 />
               </TableHead>
               <TableHead className="w-16">Foto</TableHead>
+              <TableHead>SKU</TableHead>
               <TableHead>Produto</TableHead>
               <TableHead>Categoria</TableHead>
               <TableHead className="text-right">Locação / mês</TableHead>
@@ -309,7 +327,7 @@ function ProductsPage() {
           <TableBody>
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
                   Nenhum produto encontrado.
                 </TableCell>
               </TableRow>
@@ -349,6 +367,18 @@ function ProductsPage() {
                         <ImagePlus className="h-4 w-4 text-white" />
                       </label>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {isEditing ? (
+                      <Input
+                        value={draftSku}
+                        onChange={(e) => setDraftSku(e.target.value)}
+                        className="h-8 w-24"
+                        placeholder="SKU"
+                      />
+                    ) : (
+                      <span className="text-sm font-mono text-muted-foreground">{p.sku || "—"}</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     {isEditing ? (
@@ -408,7 +438,7 @@ function ProductsPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => startEdit(p.id, p.name, p.monthlyRent)}
+                          onClick={() => startEdit(p.id, p.name, p.sku, p.monthlyRent)}
                           className="h-8 rounded-full"
                         >
                           <Pencil className="mr-1 h-3 w-3" /> Editar
@@ -461,6 +491,7 @@ function SingleCreateDialog({
   categories: { slug: string; label: string }[];
   onSubmit: (p: {
     name: string;
+    sku?: string;
     category: never;
     shortDescription?: string;
     monthlyRent?: number;
@@ -469,12 +500,14 @@ function SingleCreateDialog({
 }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const [sku, setSku] = useState("");
   const [category, setCategory] = useState<string>(categories[0]?.slug ?? "");
   const [shortDescription, setShortDescription] = useState("");
   const [rent, setRent] = useState("");
 
   function reset() {
     setName("");
+    setSku("");
     setCategory(categories[0]?.slug ?? "");
     setShortDescription("");
     setRent("");
@@ -500,9 +533,15 @@ function SingleCreateDialog({
         </DialogHeader>
 
         <div className="grid gap-4">
-          <div className="grid gap-1.5">
-            <Label htmlFor="np-name">Nome</Label>
-            <Input id="np-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Leg Press 45° Evo" />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-1.5">
+              <Label htmlFor="np-sku">SKU</Label>
+              <Input id="np-sku" value={sku} onChange={(e) => setSku(e.target.value)} placeholder="Ex: PT-01" />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="np-name">Nome *</Label>
+              <Input id="np-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Leg Press 45° Evo" />
+            </div>
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="np-cat">Categoria</Label>
@@ -542,6 +581,7 @@ function SingleCreateDialog({
               const r = rent ? Number(rent) : undefined;
               onSubmit({
                 name: name.trim(),
+                sku: sku.trim() || undefined,
                 category: category as never,
                 shortDescription: shortDescription.trim(),
                 monthlyRent: Number.isFinite(r) ? r : undefined,
@@ -696,6 +736,151 @@ Esteira Pro Silent,cardio,Esteira silenciosa premium,1290`;
             className="bg-primary text-primary-foreground hover:opacity-90"
           >
             Importar {text ? `(${parse().length})` : ""}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* =========== Bulk update =========== */
+function BulkUpdateDialog({
+  categories,
+  onSubmit,
+}: {
+  categories: { slug: string; label: string }[];
+  onSubmit: (
+    items: { sku: string; name?: string; category?: never; shortDescription?: string; monthlyRent?: number }[],
+  ) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState("");
+
+  const example = `sku,nome,categoria,descricao_curta,valor
+PT-01,Leg Press 45° Evo,evo,Leg Press com curva otimizada,890
+PT-02,Esteira Pro Silent,,Esteira silenciosa premium,1390`;
+
+  function parse(): { sku: string; name?: string; category?: never; shortDescription?: string; monthlyRent?: number }[] {
+    const validCats = new Set(categories.map((c) => c.slug));
+    const lines = text
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+
+    const items: { sku: string; name?: string; category?: never; shortDescription?: string; monthlyRent?: number }[] = [];
+    for (const line of lines) {
+      if (/^sku[\s,]/i.test(line)) continue; // pula header
+      const parts = line.split(",").map((p) => p.trim());
+      const [sku, name, category, shortDescription, valueStr] = parts;
+      
+      if (!sku) continue;
+
+      const monthlyRent = valueStr ? Number(valueStr) : undefined;
+      items.push({
+        sku,
+        name: name || undefined,
+        category: validCats.has(category) ? category as never : undefined,
+        shortDescription: shortDescription || undefined,
+        monthlyRent: Number.isFinite(monthlyRent) ? monthlyRent : undefined,
+      });
+    }
+    return items;
+  }
+
+  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setText(event.target?.result as string);
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  }
+
+  function downloadTemplate() {
+    const blob = new Blob([example], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "modelo_atualizacao_produtos.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) setText("");
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button variant="outline" className="rounded-full">
+          <ArrowRightLeft className="mr-1.5 h-4 w-4" /> Atualizar via CSV
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Atualizar produtos via CSV (por SKU)</DialogTitle>
+          <DialogDescription>
+            Faça upload do seu arquivo CSV ou cole os dados abaixo.
+            O sistema usará o <strong>SKU</strong> para encontrar o produto e atualizar os outros campos fornecidos.
+            Campos vazios serão ignorados (não apagarão os dados atuais).
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/40 p-4">
+            <div className="flex-1">
+              <Label htmlFor="csv-update" className="font-semibold cursor-pointer text-primary hover:underline">
+                Selecionar arquivo CSV
+              </Label>
+              <Input
+                id="csv-update"
+                type="file"
+                accept=".csv"
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Os dados serão extraídos e exibidos abaixo para conferência.
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={downloadTemplate} className="shrink-0">
+              Baixar Modelo
+            </Button>
+          </div>
+
+          <Textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={example}
+            rows={8}
+            className="font-mono text-xs"
+          />
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
+          <Button
+            onClick={() => {
+              const items = parse();
+              if (items.length === 0) {
+                toast.error("Nenhuma linha válida com SKU encontrada no CSV");
+                return;
+              }
+              onSubmit(items);
+              setOpen(false);
+              setText("");
+            }}
+            className="bg-primary text-primary-foreground hover:opacity-90"
+          >
+            Atualizar {text ? `(${parse().length})` : ""}
           </Button>
         </DialogFooter>
       </DialogContent>
