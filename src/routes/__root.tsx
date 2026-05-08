@@ -7,6 +7,7 @@ import { Footer } from "@/components/layout/Footer";
 import { CartDrawer } from "@/components/layout/CartDrawer";
 import { Toaster } from "@/components/ui/sonner";
 import { useAnalytics } from "@/store/analytics";
+import { useAdminStore } from "@/store/admin";
 
 function NotFoundComponent() {
   return (
@@ -95,12 +96,16 @@ function RootShell({ children }: { children: React.ReactNode }) {
 function RootComponent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const trackVisit = useAnalytics((s) => s.trackVisit);
+  const initialize = useAdminStore((s) => s.initialize);
   const isAdmin = pathname.startsWith("/admin");
 
   useEffect(() => {
+    // Inicializa Supabase
+    initialize();
+    
     // Não conta visitas dentro do painel admin
     if (!isAdmin) trackVisit(pathname);
-  }, [pathname, isAdmin, trackVisit]);
+  }, [pathname, isAdmin, trackVisit, initialize]);
 
   // Admin tem layout próprio (sem header/footer/cart do site)
   if (isAdmin) {

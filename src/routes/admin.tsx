@@ -38,16 +38,24 @@ function AdminLayout() {
  * Login (gate)
  * =========================== */
 function AdminGate() {
-  const unlock = useAdminStore((s) => s.unlock);
+  const login = useAdminStore((s) => s.login);
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const ok = unlock(password);
-    if (!ok) {
+    setLoading(true);
+    setError(false);
+    try {
+      await login(email, password);
+      toast.success("Login realizado com sucesso");
+    } catch (err) {
       setError(true);
       setPassword("");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -67,31 +75,42 @@ function AdminGate() {
           Acesso restrito. Informe a senha para continuar.
         </p>
 
-        <div className="mt-6 grid gap-1.5">
-          <Label htmlFor="pw">Senha</Label>
-          <Input
-            id="pw"
-            type="password"
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-              setError(false);
-            }}
-            placeholder="••••••••"
-            className={cn(error && "border-destructive")}
-            autoFocus
-          />
-          {error && <p className="text-xs text-destructive">Senha incorreta.</p>}
-          <p className="mt-1 text-xs text-muted-foreground">
-            Dica MVP: <code className="rounded bg-muted px-1">rentfit2026</code>
-          </p>
+        <div className="mt-6 grid gap-4">
+          <div className="grid gap-1.5">
+            <Label htmlFor="email">E-mail</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="admin@rentfitness.com"
+              required
+            />
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="pw">Senha</Label>
+            <Input
+              id="pw"
+              type="password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError(false);
+              }}
+              placeholder="••••••••"
+              className={cn(error && "border-destructive")}
+              required
+            />
+            {error && <p className="text-xs text-destructive">E-mail ou senha incorretos.</p>}
+          </div>
         </div>
 
         <Button
           type="submit"
+          disabled={loading}
           className="mt-6 w-full rounded-full bg-primary text-primary-foreground hover:opacity-90"
         >
-          Entrar
+          {loading ? "Entrando..." : "Entrar"}
         </Button>
 
         <Link
@@ -117,7 +136,7 @@ const navItems = [
 ];
 
 function AdminShell() {
-  const lock = useAdminStore((s) => s.lock);
+  const logout = useAdminStore((s) => s.logout);
   const reset = useAdminStore((s) => s.reset);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const pendingQuotes = useQuotes((s) => s.quotes.filter((q) => q.status === "novo").length);
@@ -205,7 +224,7 @@ function AdminShell() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={lock}
+            onClick={logout}
             className="w-full justify-start rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive"
           >
             <LogOut className="mr-2 h-3.5 w-3.5" />
@@ -224,7 +243,7 @@ function AdminShell() {
             </div>
             <span className="text-sm font-extrabold">Admin</span>
           </Link>
-          <Button variant="ghost" size="sm" onClick={lock}>
+          <Button variant="ghost" size="sm" onClick={logout}>
             <LogOut className="h-4 w-4" />
           </Button>
         </header>
