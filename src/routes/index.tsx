@@ -11,7 +11,7 @@ import {
 import { ProductPlaceholder } from "@/components/product/ProductPlaceholder";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import heroAcademia from "../assets/hero-rent-fitness.png";
+import heroAcademia from "@/assets/hero-rent-fitness.webp";
 import { useAdminStore } from "@/store/admin";
 
 export const Route = createFileRoute("/")({
@@ -74,30 +74,27 @@ function HomePage() {
     setMounted(true);
   }, []);
 
+  // Always show the built-in hero. Only override with store version after mount.
   const heroImage = (mounted && storeHeroImage) ? storeHeroImage : heroAcademia;
-
-  // Garantir que a imagem apareça mesmo antes da hidratação se for a padrão
-  const finalHeroImage = mounted ? heroImage : heroAcademia;
 
   return (
     <div>
       {/* HERO com banner */}
-      <section className="relative overflow-hidden">
-        {/* Background image */}
-        <div className="absolute inset-0 -z-10">
+      <section className="relative overflow-hidden min-h-[600px] lg:min-h-[700px]">
+        {/* Background image — always rendered */}
+        <div className="absolute inset-0">
           <img
-            src={finalHeroImage}
+            src={heroImage}
             alt="Academia premium projetada e instalada pela Rent Fitness em condomínio de alto padrão"
             width={1920}
             height={1080}
             fetchPriority="high"
             decoding="async"
-            className="h-full w-full object-cover transition-opacity duration-700"
-            style={{ opacity: mounted ? 1 : 0.5 }}
+            className="h-full w-full object-cover"
           />
-          {/* Overlays para legibilidade — Usando preto direto para garantir compatibilidade */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          {/* Overlays para legibilidade */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/50 to-black/20" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/10" />
         </div>
 
         <div className="mx-auto max-w-7xl px-4 pb-24 pt-16 sm:px-6 lg:px-8 lg:pb-32 lg:pt-28">
@@ -105,17 +102,17 @@ function HomePage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="max-w-2xl"
+            className="max-w-2xl relative z-10"
           >
-            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-background/80 px-3 py-1 text-xs font-medium text-foreground/70 backdrop-blur">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white/90 backdrop-blur">
               <Sparkles className="h-3.5 w-3.5 text-primary" />
               Locação premium para condomínios
             </span>
-            <h1 className="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight text-balance sm:text-5xl lg:text-6xl">
+            <h1 className="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight text-balance text-white sm:text-5xl lg:text-6xl">
               Eleve o padrão do seu condomínio com uma{" "}
               <span className="text-primary">academia profissional</span>.
             </h1>
-            <p className="mt-6 max-w-xl text-lg text-foreground/75">
+            <p className="mt-6 max-w-xl text-lg text-white/80">
               Equipamentos de alto padrão sob locação, com manutenção inclusa
               e atualização periódica. Custo fixo, zero depreciação e a
               experiência de uma academia high-end no seu empreendimento.
@@ -135,32 +132,32 @@ function HomePage() {
                 asChild
                 size="lg"
                 variant="outline"
-                className="rounded-full bg-background/70 backdrop-blur"
+                className="rounded-full border-white/30 bg-white/10 text-white backdrop-blur hover:bg-white/20 hover:text-white"
               >
                 <Link to="/contato">Falar com consultor</Link>
               </Button>
             </div>
 
-            <dl className="mt-12 grid max-w-lg grid-cols-3 gap-6 border-t border-border/70 pt-8">
+            <dl className="mt-12 grid max-w-lg grid-cols-3 gap-6 border-t border-white/20 pt-8">
               <div>
-                <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                <dt className="text-xs uppercase tracking-wide text-white/60">
                   Linhas
                 </dt>
-                <dd className="mt-1 text-2xl font-extrabold tracking-tight">4</dd>
+                <dd className="mt-1 text-2xl font-extrabold tracking-tight text-white">4</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                <dt className="text-xs uppercase tracking-wide text-white/60">
                   Equipamentos
                 </dt>
-                <dd className="mt-1 text-2xl font-extrabold tracking-tight">
-                  {products.length}+
+                <dd className="mt-1 text-2xl font-extrabold tracking-tight text-white">
+                  {products.length > 0 ? `${products.length}+` : '20+'}
                 </dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                <dt className="text-xs uppercase tracking-wide text-white/60">
                   Manutenção
                 </dt>
-                <dd className="mt-1 text-2xl font-extrabold tracking-tight">
+                <dd className="mt-1 text-2xl font-extrabold tracking-tight text-white">
                   Inclusa
                 </dd>
               </div>
@@ -172,10 +169,10 @@ function HomePage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="mt-12 inline-flex items-center gap-3 rounded-2xl glass px-5 py-3 shadow-xl"
+            className="mt-12 relative z-10 inline-flex items-center gap-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 px-5 py-3 shadow-xl"
           >
             <div className="h-2 w-2 rounded-full bg-primary" />
-            <p className="text-sm font-medium text-foreground">
+            <p className="text-sm font-medium text-white/90">
               Projeto entregue pela Rent Fitness — academia panorâmica em
               condomínio de alto padrão.
             </p>
@@ -258,7 +255,6 @@ function HomePage() {
                   <ProductPlaceholder
                     category={c.slug}
                     className="rounded-none transition group-hover:scale-[1.02]"
-                    loading="lazy"
                   />
                   <div className="p-5">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">

@@ -5,7 +5,7 @@ import { useCart } from "@/store/cart";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.webp";
 
 const navLinks = [
   { to: "/", label: "Início" },

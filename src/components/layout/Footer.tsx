@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Mail, Phone, MapPin } from "lucide-react";
 
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.webp";
 
 export function Footer() {
   return (
