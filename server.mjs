@@ -45,7 +45,7 @@ app.use(async (req, res, next) => {
     const request = new Request(url, init);
 
     // Call the TanStack Start handler
-    const response = await handler.default(request);
+    const response = await handler.fetch(request);
 
     // Send back the response
     res.status(response.status);
@@ -67,7 +67,10 @@ app.use(async (req, res, next) => {
     }
   } catch (error) {
     console.error('Server error:', error);
-    next(error);
+    res.status(500).send(`
+      <h1>Internal Server Error</h1>
+      <pre>${error.stack || error.message || String(error)}</pre>
+    `);
   }
 });
 
