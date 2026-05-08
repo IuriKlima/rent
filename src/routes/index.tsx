@@ -9,6 +9,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { ProductPlaceholder } from "@/components/product/ProductPlaceholder";
+import { ProductCard } from "@/components/product/ProductCard";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import heroAcademia from "@/assets/hero-rent-fitness.webp";
@@ -239,40 +240,84 @@ function HomePage() {
           </div>
 
           <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {categories.map((c, i) => (
-              <motion.div
-                key={c.slug}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.3 }}
-                transition={{ duration: 0.4, delay: i * 0.05 }}
-              >
-                <Link
-                  to="/produtos"
-                  search={{ categoria: c.slug }}
-                  className="group block overflow-hidden rounded-3xl border border-border bg-card transition hover:shadow-xl"
+            {categories.map((c, i) => {
+              const firstProduct = products.find((p) => p.category === c.slug && p.image);
+
+              return (
+                <motion.div
+                  key={c.slug}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.3 }}
+                  transition={{ duration: 0.4, delay: i * 0.05 }}
                 >
-                  <ProductPlaceholder
-                    category={c.slug}
-                    className="rounded-none transition group-hover:scale-[1.02]"
-                  />
-                  <div className="p-5">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">
-                      {c.short}
-                    </p>
-                    <h3 className="mt-1 text-lg font-bold tracking-tight">
-                      {c.label}
-                    </h3>
-                    <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
-                      {c.description}
-                    </p>
-                    <span className="mt-4 inline-flex items-center text-sm font-semibold text-primary">
-                      Explorar <ArrowRight className="ml-1 h-3.5 w-3.5" />
-                    </span>
-                  </div>
-                </Link>
-              </motion.div>
+                  <Link
+                    to="/produtos"
+                    search={{ categoria: c.slug }}
+                    className="group block overflow-hidden rounded-3xl border border-border bg-card transition hover:shadow-xl"
+                  >
+                    {firstProduct?.image ? (
+                      <div className="aspect-[4/3] w-full overflow-hidden bg-muted">
+                        <img
+                          src={firstProduct.image}
+                          alt={c.label}
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      </div>
+                    ) : (
+                      <ProductPlaceholder
+                        category={c.slug}
+                        className="rounded-none transition group-hover:scale-[1.02]"
+                      />
+                    )}
+                    <div className="p-5">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">
+                        {c.short}
+                      </p>
+                      <h3 className="mt-1 text-lg font-bold tracking-tight">
+                        {c.label}
+                      </h3>
+                      <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
+                        {c.description}
+                      </p>
+                      <span className="mt-4 inline-flex items-center text-sm font-semibold text-primary">
+                        Explorar <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                      </span>
+                    </div>
+                  </Link>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* PRODUTOS EM DESTAQUE */}
+      <section className="py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
+            <div>
+              <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+                Equipamentos
+              </span>
+              <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
+                Destaques do Catálogo.
+              </h2>
+            </div>
+          </div>
+
+          <div className="mt-12 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-3">
+            {products.slice(0, 6).map((p) => (
+              <ProductCard key={p.id} product={p} />
             ))}
+          </div>
+          
+          <div className="mt-12 flex justify-center">
+            <Button asChild variant="outline" size="lg" className="rounded-full">
+              <Link to="/produtos">
+                Ver todos os equipamentos <ArrowRight className="ml-1.5 h-4 w-4" />
+              </Link>
+            </Button>
           </div>
         </div>
       </section>

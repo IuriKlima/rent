@@ -92,7 +92,8 @@ function ContatoPage() {
                   <p className="text-xs uppercase tracking-wide text-white/40">
                     Telefone
                   </p>
-                  <p className="text-sm font-semibold">+55 11 99999-9999</p>
+                  <p className="text-sm font-semibold">+55 11 92491-3426</p>
+                  <p className="text-sm text-muted-foreground">Seg a Sex, 9h às 18h</p>
                 </div>
               </li>
               <li className="flex items-start gap-3">

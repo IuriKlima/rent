@@ -7,10 +7,8 @@ import { ProductCard } from "@/components/product/ProductCard";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
-const categorySchema = z.enum(["evo", "select", "peso-livre", "cardio", "todos"]);
-
 const searchSchema = z.object({
-  categoria: fallback(categorySchema, "todos").default("todos"),
+  categoria: fallback(z.string(), "todos").default("todos"),
 });
 
 export const Route = createFileRoute("/produtos")({
@@ -94,7 +92,7 @@ function ProductsPage() {
       {/* GRID */}
       <motion.div
         layout
-        className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+        className="mt-10 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-3"
       >
         {filtered.map((p) => (
           <ProductCard key={p.id} product={p} />

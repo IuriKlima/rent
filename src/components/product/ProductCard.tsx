@@ -54,11 +54,11 @@ export function ProductCard({ product }: { product: Product }) {
           <ProductPlaceholder category={product.category} className="rounded-none" />
         )}
       </Link>
-      <div className="flex flex-1 flex-col p-5">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-primary">
+      <div className="flex flex-1 flex-col p-3 sm:p-5">
+        <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-primary line-clamp-1">
           {categoryLabel}
         </span>
-        <h3 className="mt-1 text-lg font-bold tracking-tight">
+        <h3 className="mt-1 text-sm sm:text-lg font-bold tracking-tight line-clamp-2">
           <Link
             to="/produto/$id"
             params={{ id: product.id }}
@@ -67,15 +67,15 @@ export function ProductCard({ product }: { product: Product }) {
             {product.name}
           </Link>
         </h3>
-        <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
+        <p className="mt-1.5 hidden sm:block line-clamp-2 text-sm text-muted-foreground">
           {product.shortDescription}
         </p>
-        <div className="mt-5 flex items-center gap-2">
+        <div className="mt-3 sm:mt-5 flex flex-wrap items-center gap-1.5 sm:gap-2">
           <Button
             asChild
             variant="outline"
             size="sm"
-            className="rounded-full"
+            className="hidden rounded-full sm:inline-flex"
           >
             <Link to="/produto/$id" params={{ id: product.id }}>
               Detalhes <ArrowRight className="ml-1 h-3.5 w-3.5" />
@@ -84,10 +84,11 @@ export function ProductCard({ product }: { product: Product }) {
           <Button
             size="sm"
             onClick={handleAdd}
-            className="ml-auto rounded-full bg-primary text-primary-foreground hover:opacity-90"
+            className="w-full sm:w-auto sm:ml-auto rounded-full bg-primary text-primary-foreground hover:opacity-90"
           >
             <Plus className="mr-1 h-3.5 w-3.5" />
-            Orçar
+            <span className="hidden sm:inline">Orçar</span>
+            <span className="sm:hidden">Add</span>
           </Button>
         </div>
       </div>

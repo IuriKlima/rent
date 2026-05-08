@@ -97,18 +97,38 @@ function ProductsPage() {
     );
   };
 
+  async function compressImage(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 800;
+        const scale = MAX_WIDTH / img.width;
+        canvas.width = MAX_WIDTH;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.8));
+      };
+      img.onerror = reject;
+    });
+  }
+
   async function handleImageUpload(id: string, file: File) {
-    if (!file.type.startsWith("image/")) {
-      toast.error("Arquivo inválido");
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Imagem muito grande. Limite de 10MB.");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const base64 = e.target?.result as string;
-      updateProduct(id, { image: base64 });
-      toast.success("Imagem atualizada");
-    };
-    reader.readAsDataURL(file);
+    try {
+      toast.info("Processando imagem...");
+      const compressedBase64 = await compressImage(file);
+      updateProduct(id, { image: compressedBase64 });
+      toast.success("Imagem atualizada e comprimida!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao processar imagem.");
+    }
   }
 
   // edit-in-place
