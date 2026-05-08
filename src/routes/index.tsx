@@ -11,7 +11,7 @@ import {
 import { ProductPlaceholder } from "@/components/product/ProductPlaceholder";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import heroAcademia from "@/assets/hero-rent-fitness.png";
+import heroAcademia from "../assets/hero-rent-fitness.png";
 import { useAdminStore } from "@/store/admin";
 
 export const Route = createFileRoute("/")({
@@ -76,6 +76,9 @@ function HomePage() {
 
   const heroImage = (mounted && storeHeroImage) ? storeHeroImage : heroAcademia;
 
+  // Garantir que a imagem apareça mesmo antes da hidratação se for a padrão
+  const finalHeroImage = mounted ? heroImage : heroAcademia;
+
   return (
     <div>
       {/* HERO com banner */}
@@ -83,12 +86,14 @@ function HomePage() {
         {/* Background image */}
         <div className="absolute inset-0 -z-10">
           <img
-            src={heroImage}
+            src={finalHeroImage}
             alt="Academia premium projetada e instalada pela Rent Fitness em condomínio de alto padrão"
             width={1920}
             height={1080}
             fetchPriority="high"
-            className="h-full w-full object-cover"
+            decoding="async"
+            className="h-full w-full object-cover transition-opacity duration-700"
+            style={{ opacity: mounted ? 1 : 0.5 }}
           />
           {/* Overlays para legibilidade — Usando preto direto para garantir compatibilidade */}
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
@@ -253,6 +258,7 @@ function HomePage() {
                   <ProductPlaceholder
                     category={c.slug}
                     className="rounded-none transition group-hover:scale-[1.02]"
+                    loading="lazy"
                   />
                   <div className="p-5">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">
