@@ -572,9 +572,9 @@ function BulkCreateDialog({
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
 
-  const example = `Nome do equipamento, categoria, descrição curta, valor
-Leg Press 45° Evo, evo, Leg Press com curva otimizada, 890
-Esteira Pro Silent, cardio, Esteira silenciosa premium, 1290`;
+  const example = `nome,categoria,descricao_curta,valor
+Leg Press 45° Evo,evo,Leg Press com curva otimizada,890
+Esteira Pro Silent,cardio,Esteira silenciosa premium,1290`;
 
   function parse(): { name: string; category: never; shortDescription?: string; monthlyRent?: number }[] {
     const validCats = new Set(categories.map((c) => c.slug));
@@ -602,6 +602,29 @@ Esteira Pro Silent, cardio, Esteira silenciosa premium, 1290`;
     return items;
   }
 
+  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setText(event.target?.result as string);
+    };
+    reader.readAsText(file);
+    // Reset file input so same file can be uploaded again if needed
+    e.target.value = "";
+  }
+
+  function downloadTemplate() {
+    const blob = new Blob([example], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "modelo_produtos.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
   return (
     <Dialog
       open={open}
@@ -612,25 +635,48 @@ Esteira Pro Silent, cardio, Esteira silenciosa premium, 1290`;
     >
       <DialogTrigger asChild>
         <Button variant="outline" className="rounded-full">
-          <FileSpreadsheet className="mr-1.5 h-4 w-4" /> Criação em massa
+          <FileSpreadsheet className="mr-1.5 h-4 w-4" /> Importar CSV
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Criação em massa</DialogTitle>
+          <DialogTitle>Importar produtos via CSV</DialogTitle>
           <DialogDescription>
-            Cole as linhas no formato CSV: <code>nome, categoria, descrição curta, valor</code>.
+            Faça upload do seu arquivo CSV ou cole os dados abaixo.
             Categorias disponíveis: <strong>{categories.map((c) => c.slug).join(", ")}</strong>.
           </DialogDescription>
         </DialogHeader>
 
-        <Textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder={example}
-          rows={10}
-          className="font-mono text-xs"
-        />
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/40 p-4">
+            <div className="flex-1">
+              <Label htmlFor="csv-upload" className="font-semibold cursor-pointer text-primary hover:underline">
+                Selecionar arquivo CSV
+              </Label>
+              <Input
+                id="csv-upload"
+                type="file"
+                accept=".csv"
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Os dados serão extraídos e exibidos abaixo para conferência.
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={downloadTemplate} className="shrink-0">
+              Baixar Modelo
+            </Button>
+          </div>
+
+          <Textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={example}
+            rows={8}
+            className="font-mono text-xs"
+          />
+        </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
@@ -640,7 +686,7 @@ Esteira Pro Silent, cardio, Esteira silenciosa premium, 1290`;
             onClick={() => {
               const items = parse();
               if (items.length === 0) {
-                toast.error("Nenhuma linha válida encontrada");
+                toast.error("Nenhuma linha válida encontrada no CSV");
                 return;
               }
               onSubmit(items);
@@ -649,7 +695,7 @@ Esteira Pro Silent, cardio, Esteira silenciosa premium, 1290`;
             }}
             className="bg-primary text-primary-foreground hover:opacity-90"
           >
-            Importar {`(${parse().length})`}
+            Importar {text ? `(${parse().length})` : ""}
           </Button>
         </DialogFooter>
       </DialogContent>

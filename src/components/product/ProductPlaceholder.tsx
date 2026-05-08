@@ -30,7 +30,9 @@ export function ProductPlaceholder({
   variant = "primary",
   iconSize = 96,
 }: Props) {
-  const Icon = (variant === "primary" ? ICONS : ALT_ICONS)[category];
+  const IconMap = variant === "primary" ? ICONS : ALT_ICONS;
+  const Icon = IconMap[category] || Dumbbell; // Fallback to Dumbbell
+
   return (
     <div
       className={cn(

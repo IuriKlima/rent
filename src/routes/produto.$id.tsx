@@ -139,11 +139,19 @@ function ProductDetail() {
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid gap-12 lg:grid-cols-2">
           <div className="lg:sticky lg:top-24 lg:self-start">
-            <ProductPlaceholder
-              category={product.category}
-              iconSize={160}
-              className="aspect-square"
-            />
+            {product.image ? (
+              <img
+                src={product.image}
+                alt={product.name}
+                className="aspect-square w-full rounded-2xl object-cover border border-border"
+              />
+            ) : (
+              <ProductPlaceholder
+                category={product.category}
+                iconSize={160}
+                className="aspect-square"
+              />
+            )}
           </div>
 
           <div>

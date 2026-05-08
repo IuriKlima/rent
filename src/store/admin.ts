@@ -41,9 +41,9 @@ type AdminState = {
   bulkRemoveProducts: (ids: string[]) => void;
   removeProduct: (id: string) => void;
   // categories
-  addCategory: (c: Omit<Category, "slug"> & { slug: string }) => void;
-  updateCategory: (slug: CategorySlug, patch: Partial<Omit<Category, "slug">>) => void;
-  removeCategory: (slug: CategorySlug) => void;
+  addCategory: (c: Omit<Category, "slug"> & { slug: string }) => Promise<void>;
+  updateCategory: (slug: CategorySlug, patch: Partial<Omit<Category, "slug">>) => Promise<void>;
+  removeCategory: (slug: CategorySlug) => Promise<void>;
   // reset
   reset: () => void;
 };
@@ -225,35 +225,53 @@ export const useAdminStore = create<AdminState>()(
         set((state) => ({ products: state.products.filter((p) => p.id !== id) }));
       },
 
-      addCategory: (c) => {
+      addCategory: async (c) => {
         const slug = (slugify(c.slug) || slugify(c.label)) as CategorySlug;
         if (!slug) return;
         if (get().categories.some((x) => x.slug === slug)) return;
+        
+        const newCategory = {
+          slug,
+          label: c.label,
+          short: c.short,
+          description: c.description,
+        };
+
+        const { error } = await supabase.from('categories').insert(newCategory);
+        if (error) {
+          console.error("Error creating category:", error);
+          return;
+        }
+
         set((state) => ({
-          categories: [
-            ...state.categories,
-            {
-              slug,
-              label: c.label,
-              short: c.short,
-              description: c.description,
-            },
-          ],
+          categories: [...state.categories, newCategory],
         }));
       },
 
-      updateCategory: (slug, patch) =>
+      updateCategory: async (slug, patch) => {
+        const { error } = await supabase.from('categories').update(patch).eq('slug', slug);
+        if (error) {
+          console.error("Error updating category:", error);
+          return;
+        }
         set((state) => ({
           categories: state.categories.map((c) =>
             c.slug === slug ? { ...c, ...patch } : c,
           ),
-        })),
+        }));
+      },
 
-      removeCategory: (slug) =>
+      removeCategory: async (slug) => {
+        const { error } = await supabase.from('categories').delete().eq('slug', slug);
+        if (error) {
+          console.error("Error deleting category:", error);
+          return;
+        }
         set((state) => ({
           categories: state.categories.filter((c) => c.slug !== slug),
           // não remove produtos automaticamente; apenas oculta da listagem por categoria
-        })),
+        }));
+      },
 
       reset: () =>
         set({
