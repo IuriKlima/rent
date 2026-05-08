@@ -1,13 +1,18 @@
-# Stage 1: Build
-FROM node:22-alpine AS builder
+# Stage 1: Install dependencies
+FROM node:22-alpine AS deps
 WORKDIR /app
-
-# Limitar memória do Node para evitar OOM kill
-ENV NODE_OPTIONS="--max-old-space-size=512"
-
 COPY package.json package-lock.json ./
 RUN npm ci --legacy-peer-deps
 
+# Stage 2: Build
+FROM node:22-alpine AS builder
+WORKDIR /app
+
+# Aumentar memória para SSR build
+ENV NODE_OPTIONS="--max-old-space-size=1536"
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY package.json package-lock.json ./
 COPY . .
 
 # Build args para Supabase
@@ -18,12 +23,11 @@ ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
 
 RUN npm run build
 
-# Stage 2: Production (imagem mínima)
+# Stage 3: Production (imagem mínima ~50MB)
 FROM node:22-alpine AS runner
 WORKDIR /app
 
 COPY --from=builder /app/.output ./.output
-COPY --from=builder /app/package.json ./
 
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
