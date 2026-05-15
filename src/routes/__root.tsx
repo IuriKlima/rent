@@ -1,5 +1,5 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts, useRouterState } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 import appCss from "../styles.css?url";
 import { Header } from "@/components/layout/Header";
@@ -89,6 +89,27 @@ function RootShell({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
+        {/* Splash inline no HTML — aparece INSTANTANEAMENTE no first paint,
+            antes de qualquer JS carregar. Só o logo centralizado na tela. */}
+        <div
+          id="splash"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "#1a1a1a",
+            transition: "opacity 0.4s ease",
+          }}
+        >
+          <img
+            src={logo}
+            alt="Rent Fitness"
+            style={{ height: "5rem", width: "auto" }}
+          />
+        </div>
         {children}
         <Scripts />
       </body>
@@ -96,43 +117,12 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Splash screen premium com logo */
-function SplashScreen({ visible }: { visible: boolean }) {
-  const [show, setShow] = useState(true);
-
-  useEffect(() => {
-    if (!visible) {
-      // Espera a animação de fade-out terminar antes de desmontar
-      const timer = setTimeout(() => setShow(false), 500);
-      return () => clearTimeout(timer);
-    }
-  }, [visible]);
-
-  if (!show) return null;
-
-  return (
-    <div
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-secondary transition-opacity duration-500"
-      style={{ opacity: visible ? 1 : 0 }}
-    >
-      {/* Logo com animação de pulse suave */}
-      <img
-        src={logo}
-        alt="Rent Fitness"
-        className="h-20 w-auto animate-pulse sm:h-24"
-      />
-
-      {/* Barra de progresso animada */}
-      <div className="mt-8 h-0.5 w-40 overflow-hidden rounded-full bg-white/10">
-        <div className="h-full w-full animate-[loading-slide_1.2s_ease-in-out_infinite] rounded-full bg-primary" />
-      </div>
-
-      {/* Texto sutil */}
-      <p className="mt-4 text-xs font-medium tracking-widest uppercase text-white/40">
-        Carregando
-      </p>
-    </div>
-  );
+/** Remove o splash do HTML quando os dados terminam de carregar */
+function dismissSplash() {
+  const el = document.getElementById("splash");
+  if (!el) return;
+  el.style.opacity = "0";
+  setTimeout(() => el.remove(), 400);
 }
 
 function RootComponent() {
@@ -146,6 +136,11 @@ function RootComponent() {
   useEffect(() => {
     initialize();
   }, [initialize]);
+
+  // Quando loading termina, faz fade-out e remove o splash do DOM
+  useEffect(() => {
+    if (!loading) dismissSplash();
+  }, [loading]);
 
   // Track de visitas (não admin)
   useEffect(() => {
@@ -172,7 +167,6 @@ function RootComponent() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <SplashScreen visible={loading} />
       <Header />
       <main className="flex-1">
         <Outlet />
