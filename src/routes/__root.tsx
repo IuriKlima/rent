@@ -1,5 +1,5 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts, useRouterState } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import appCss from "../styles.css?url";
 import { Header } from "@/components/layout/Header";
@@ -8,6 +8,7 @@ import { CartDrawer } from "@/components/layout/CartDrawer";
 import { Toaster } from "@/components/ui/sonner";
 import { useAnalytics } from "@/store/analytics";
 import { useAdminStore } from "@/store/admin";
+import logo from "@/assets/logo.webp";
 
 import { WhatsAppButton } from "@/components/layout/WhatsAppButton";
 
@@ -95,10 +96,50 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Splash screen premium com logo */
+function SplashScreen({ visible }: { visible: boolean }) {
+  const [show, setShow] = useState(true);
+
+  useEffect(() => {
+    if (!visible) {
+      // Espera a animação de fade-out terminar antes de desmontar
+      const timer = setTimeout(() => setShow(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [visible]);
+
+  if (!show) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-secondary transition-opacity duration-500"
+      style={{ opacity: visible ? 1 : 0 }}
+    >
+      {/* Logo com animação de pulse suave */}
+      <img
+        src={logo}
+        alt="Rent Fitness"
+        className="h-20 w-auto animate-pulse sm:h-24"
+      />
+
+      {/* Barra de progresso animada */}
+      <div className="mt-8 h-0.5 w-40 overflow-hidden rounded-full bg-white/10">
+        <div className="h-full w-full animate-[loading-slide_1.2s_ease-in-out_infinite] rounded-full bg-primary" />
+      </div>
+
+      {/* Texto sutil */}
+      <p className="mt-4 text-xs font-medium tracking-widest uppercase text-white/40">
+        Carregando
+      </p>
+    </div>
+  );
+}
+
 function RootComponent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const trackVisit = useAnalytics((s) => s.trackVisit);
   const initialize = useAdminStore((s) => s.initialize);
+  const loading = useAdminStore((s) => s.loading);
   const isAdmin = pathname.startsWith("/admin");
 
   // Inicializa Supabase UMA VEZ na montagem
@@ -129,15 +170,9 @@ function RootComponent() {
     );
   }
 
-  const loading = useAdminStore((s) => s.loading);
-
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      {loading && (
-        <div className="fixed inset-x-0 top-0 z-50 h-0.5 overflow-hidden bg-primary/20">
-          <div className="h-full w-1/3 animate-[loading-slide_1s_ease-in-out_infinite] bg-primary rounded-r-full" />
-        </div>
-      )}
+      <SplashScreen visible={loading} />
       <Header />
       <main className="flex-1">
         <Outlet />
@@ -157,3 +192,4 @@ function RootComponent() {
     </div>
   );
 }
+
