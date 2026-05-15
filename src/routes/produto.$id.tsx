@@ -34,33 +34,34 @@ export const Route = createFileRoute("/produto/$id")({
       image: p.image
     };
 
-    // Fetch related
-    const { data: relatedData } = await supabase
-      .from('products')
-      .select('*')
-      .in('id', product.relatedIds);
+    // Buscar relacionados apenas se houver IDs
+    let related: Product[] = [];
+    if (product.relatedIds?.length > 0) {
+      const { data: relatedData } = await supabase
+        .from('products')
+        .select('*')
+        .in('id', product.relatedIds);
 
-    const related: Product[] = (relatedData?.map(rp => ({
-      id: rp.id,
-      name: rp.name,
-      category: rp.category,
-      shortDescription: rp.short_description,
-      description: rp.description,
-      specs: rp.specs,
-      relatedIds: rp.related_ids,
-      active: rp.active,
-      monthlyRent: rp.monthly_rent,
-      image: rp.image
-    })) as Product[]) || [];
+      related = (relatedData?.map(rp => ({
+        id: rp.id,
+        name: rp.name,
+        category: rp.category,
+        shortDescription: rp.short_description,
+        description: rp.description,
+        specs: rp.specs,
+        relatedIds: rp.related_ids,
+        active: rp.active,
+        monthlyRent: rp.monthly_rent,
+        image: rp.image
+      })) as Product[]) || [];
+    }
 
-    // Fetch categories for head/label
-    const { data: cats } = await supabase.from('categories').select('*');
-
-    return { product, related, categories: (cats as any[]) || [] };
+    return { product, related };
   },
   head: ({ loaderData }) => {
     const product = loaderData?.product;
-    const categories = loaderData?.categories;
+    // Usar categorias do store (já carregadas no initialize)
+    const categories = useAdminStore.getState().categories;
     if (!product) {
       return {
         meta: [{ title: "Produto não encontrado — Rent Fitness" }],
@@ -103,7 +104,8 @@ export const Route = createFileRoute("/produto/$id")({
 });
 
 function ProductDetail() {
-  const { product, related, categories } = Route.useLoaderData();
+  const { product, related } = Route.useLoaderData();
+  const categories = useAdminStore((s) => s.categories);
   const categoryLabel =
     categories.find((c: any) => c.slug === product.category)?.label ?? "";
   const addItem = useCart((s) => s.addItem);

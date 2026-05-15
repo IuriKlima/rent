@@ -101,13 +101,15 @@ function RootComponent() {
   const initialize = useAdminStore((s) => s.initialize);
   const isAdmin = pathname.startsWith("/admin");
 
+  // Inicializa Supabase UMA VEZ na montagem
   useEffect(() => {
-    // Inicializa Supabase
     initialize();
-    
-    // Não conta visitas dentro do painel admin
+  }, [initialize]);
+
+  // Track de visitas (não admin)
+  useEffect(() => {
     if (!isAdmin) trackVisit(pathname);
-  }, [pathname, isAdmin, trackVisit, initialize]);
+  }, [pathname, isAdmin, trackVisit]);
 
   // Admin tem layout próprio (sem header/footer/cart do site)
   if (isAdmin) {
@@ -127,8 +129,15 @@ function RootComponent() {
     );
   }
 
+  const loading = useAdminStore((s) => s.loading);
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      {loading && (
+        <div className="fixed inset-x-0 top-0 z-50 h-0.5 overflow-hidden bg-primary/20">
+          <div className="h-full w-1/3 animate-[loading-slide_1s_ease-in-out_infinite] bg-primary rounded-r-full" />
+        </div>
+      )}
       <Header />
       <main className="flex-1">
         <Outlet />

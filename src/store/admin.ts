@@ -11,6 +11,7 @@ import { supabase } from "@/lib/supabase";
 import { useQuotes } from "./quotes";
 
 type AdminState = {
+  loading: boolean;
   products: Product[];
   categories: Category[];
   heroImage?: string;
@@ -66,6 +67,7 @@ function slugify(input: string): string {
 export const useAdminStore = create<AdminState>()(
   persist(
     (set, get) => ({
+      loading: true,
       products: [],
       categories: [],
       heroImage: undefined,
@@ -73,14 +75,18 @@ export const useAdminStore = create<AdminState>()(
       user: null,
 
       initialize: async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        // Fetch categories first
-        const { data: cats } = await supabase.from('categories').select('*').order('label');
-        // Fetch products
-        const { data: prods } = await supabase.from('products').select('*').order('created_at', { ascending: false });
-        // Fetch config
-        const { data: config } = await supabase.from('site_config').select('*');
+        // Paralelizar todas as queries para reduzir latência (~3x mais rápido)
+        const [sessionResult, catsResult, prodsResult, configResult] = await Promise.all([
+          supabase.auth.getSession(),
+          supabase.from('categories').select('*').order('label'),
+          supabase.from('products').select('*').order('created_at', { ascending: false }),
+          supabase.from('site_config').select('*'),
+        ]);
+
+        const session = sessionResult.data?.session;
+        const cats = catsResult.data;
+        const prods = prodsResult.data;
+        const config = configResult.data;
         const hero = config?.find(c => c.key === 'hero')?.value?.image;
 
         if (session) {
@@ -88,6 +94,7 @@ export const useAdminStore = create<AdminState>()(
         }
 
         set({ 
+          loading: false,
           user: session?.user ?? null,
           unlocked: !!session?.user,
           categories: (cats as any[]) || [],
@@ -344,10 +351,9 @@ export const useAdminStore = create<AdminState>()(
     }),
     {
       name: "rentfit-admin",
-      // Não persiste o estado de "unlocked" — exige login a cada sessão
+      // Não persiste products/categories (sempre vêm frescos do Supabase)
+      // Não persiste unlocked — exige login a cada sessão
       partialize: (state) => ({
-        products: state.products,
-        categories: state.categories,
         heroImage: state.heroImage,
       }),
     },
