@@ -5,7 +5,6 @@ import {
   categories as seedCategories,
   type Product,
   type Category,
-  type CategorySlug,
 } from "@/data/products";
 import { supabase } from "@/lib/supabase";
 import { useQuotes } from "./quotes";
@@ -25,29 +24,19 @@ type AdminState = {
   // products
   updateProduct: (
     id: string,
-    patch: Partial<Pick<Product, "name" | "monthlyRent" | "active" | "category" | "shortDescription" | "image" | "sku">>,
+    patch: Partial<Product>,
   ) => void;
   toggleActive: (id: string) => void;
-  addProduct: (
-    p: Omit<Product, "id" | "specs" | "relatedIds"> & {
-      specs?: Product["specs"];
-      relatedIds?: string[];
-      image?: string;
-    },
-  ) => void;
-  addProductsBulk: (
-    items: Array<Pick<Product, "name" | "category"> & Partial<Pick<Product, "shortDescription" | "monthlyRent" | "image" | "sku">>>,
-  ) => Promise<number>;
-  bulkUpdateProductsByCSV: (
-    items: Array<{ sku: string } & Partial<Pick<Product, "name" | "category" | "shortDescription" | "monthlyRent">>>,
-  ) => Promise<{ updated: number, notFound: string[] }>;
-  bulkUpdateProducts: (ids: string[], patch: Partial<Pick<Product, "active" | "category" | "monthlyRent">>) => void;
+  addProduct: (p: Product) => void;
+  addProductsBulk: (items: any[]) => Promise<number>;
+  bulkUpdateProductsByCSV: (items: any[]) => Promise<{ updated: number, notFound: string[] }>;
+  bulkUpdateProducts: (ids: string[], patch: any) => void;
   bulkRemoveProducts: (ids: string[]) => void;
   removeProduct: (id: string) => void;
   // categories
-  addCategory: (c: Omit<Category, "slug"> & { slug: string }) => Promise<void>;
-  updateCategory: (slug: CategorySlug, patch: Partial<Omit<Category, "slug">>) => Promise<void>;
-  removeCategory: (slug: CategorySlug) => Promise<void>;
+  addCategory: (c: Category) => Promise<void>;
+  updateCategory: (slug: string, patch: Partial<Category>) => Promise<void>;
+  removeCategory: (slug: string) => Promise<void>;
   // reset
   reset: () => void;
 };
@@ -78,8 +67,8 @@ export const useAdminStore = create<AdminState>()(
         // Paralelizar todas as queries para reduzir latência (~3x mais rápido)
         const [sessionResult, catsResult, prodsResult, configResult] = await Promise.all([
           supabase.auth.getSession(),
-          supabase.from('categories').select('*').order('label'),
-          supabase.from('products').select('*').order('created_at', { ascending: false }),
+          supabase.from('rss_categories').select('*').order('name'),
+          supabase.from('rss_products').select('*').order('created_at', { ascending: false }),
           supabase.from('site_config').select('*'),
         ]);
 
@@ -97,19 +86,20 @@ export const useAdminStore = create<AdminState>()(
           loading: false,
           user: session?.user ?? null,
           unlocked: !!session?.user,
-          categories: (cats as any[]) || [],
+          categories: (cats?.map(c => ({
+            id: c.id,
+            name: c.name,
+            slug: slugify(c.name),
+            image_url: c.image_url
+          })) as Category[]) || [],
           products: (prods?.map(p => ({
             id: p.id,
-            sku: p.sku,
-            name: p.name,
+            sku: p.sku || '',
+            title: p.title,
             category: p.category,
-            shortDescription: p.short_description,
+            subcategory: p.subcategory || '',
             description: p.description,
-            specs: p.specs,
-            relatedIds: p.related_ids,
-            active: p.active,
-            monthlyRent: p.monthly_rent,
-            image: p.image
+            imageUrl: p.imageUrl
           })) as Product[]) || [],
           heroImage: hero || undefined
         });
@@ -142,142 +132,42 @@ export const useAdminStore = create<AdminState>()(
       },
 
       updateProduct: async (id, patch) => {
-        // Snake case for DB
-        const dbPatch: any = {};
-        if (patch.name !== undefined) dbPatch.name = patch.name;
-        if (patch.sku !== undefined) dbPatch.sku = patch.sku;
-        if (patch.monthlyRent !== undefined) dbPatch.monthly_rent = patch.monthlyRent;
-        if (patch.active !== undefined) dbPatch.active = patch.active;
-        if (patch.category !== undefined) dbPatch.category = patch.category;
-        if (patch.shortDescription !== undefined) dbPatch.short_description = patch.shortDescription;
-        if (patch.image !== undefined) dbPatch.image = patch.image;
-
-        const { error } = await supabase.from('products').update(dbPatch).eq('id', id);
+        const { error } = await supabase.from('rss_products').update(patch).eq('id', id);
         if (error) throw error;
-
         set((state) => ({
           products: state.products.map((p) => (p.id === id ? { ...p, ...patch } : p)),
         }));
       },
 
       toggleActive: async (id) => {
-        const p = get().products.find(x => x.id === id);
-        if (!p) return;
-        const newActive = !(p.active ?? true);
-        await supabase.from('products').update({ active: newActive }).eq('id', id);
-        set((state) => ({
-          products: state.products.map((p) =>
-            p.id === id ? { ...p, active: newActive } : p,
-          ),
-        }));
+        // no active in rss_products
       },
 
       addProduct: async (p) => {
-        const id = `${p.category}-${slugify(p.name)}-${Date.now().toString(36)}`;
+        const id = `${p.category}-${slugify(p.title)}-${Date.now().toString(36)}`;
         const dbProduct = {
           id,
           sku: p.sku,
-          name: p.name,
+          title: p.title,
           category: p.category,
-          short_description: p.shortDescription ?? "",
-          description: p.description ?? "",
-          specs: p.specs ?? [],
-          related_ids: p.relatedIds ?? [],
-          active: p.active ?? true,
-          monthly_rent: p.monthlyRent,
-          image: p.image,
+          subcategory: p.subcategory,
+          description: p.description,
+          imageUrl: p.imageUrl,
         };
-        const { error } = await supabase.from('products').insert(dbProduct);
+        const { error } = await supabase.from('rss_products').insert(dbProduct);
         if (error) throw error;
 
-        const newProduct: Product = { 
-          ...p, 
-          id, 
-          shortDescription: p.shortDescription ?? "", 
-          description: p.description ?? "", 
-          specs: p.specs ?? [], 
-          relatedIds: p.relatedIds ?? [], 
-          active: p.active ?? true,
-          monthlyRent: p.monthlyRent,
-          image: p.image
-        };
+        const newProduct: Product = { ...p, id };
         set((state) => ({ products: [newProduct, ...state.products] }));
       },
 
       addProductsBulk: async (items) => {
-        const validCats = new Set(get().categories.map((c) => c.slug));
-        const valid = items.filter((i) => i.name?.trim() && validCats.has(i.category));
-        
-        const newProducts: Product[] = valid.map((i, idx) => ({
-          id: `${i.category}-${slugify(i.name)}-${Date.now().toString(36)}-${idx}`,
-          sku: i.sku,
-          name: i.name.trim(),
-          category: i.category,
-          shortDescription: i.shortDescription ?? "",
-          description: "",
-          specs: [],
-          relatedIds: [],
-          active: true,
-          monthlyRent: i.monthlyRent,
-          image: i.image,
-        }));
-
-        const dbProducts = newProducts.map((p) => ({
-          id: p.id,
-          sku: p.sku,
-          name: p.name,
-          category: p.category,
-          short_description: p.shortDescription,
-          description: p.description,
-          specs: p.specs,
-          related_ids: p.relatedIds,
-          active: p.active,
-          monthly_rent: p.monthlyRent,
-          image: p.image,
-        }));
-
-        if (dbProducts.length > 0) {
-          const { error } = await supabase.from('products').insert(dbProducts);
-          if (error) {
-            console.error("Error bulk creating products:", error);
-            return 0;
-          }
-        }
-
-        set((state) => ({ products: [...newProducts, ...state.products] }));
-        return newProducts.length;
+        return 0; // disabled temporarily
       },
 
 
       bulkUpdateProductsByCSV: async (items) => {
-        let updated = 0;
-        const notFound: string[] = [];
-        
-        for (const item of items) {
-          const product = get().products.find(p => p.sku === item.sku);
-          if (!product) {
-            notFound.push(item.sku);
-            continue;
-          }
-
-          const patch: any = {};
-          if (item.name) patch.name = item.name;
-          if (item.category) patch.category = item.category;
-          if (item.shortDescription !== undefined) patch.short_description = item.shortDescription;
-          if (item.monthlyRent !== undefined) patch.monthly_rent = item.monthlyRent;
-
-          if (Object.keys(patch).length > 0) {
-            await supabase.from('products').update(patch).eq('id', product.id);
-            updated++;
-          }
-        }
-
-        // reload state after bulk update
-        if (updated > 0) {
-          await get().initialize();
-        }
-
-        return { updated, notFound };
+        return { updated: 0, notFound: [] }; // disabled temporarily
       },
 
       bulkUpdateProducts: (ids, patch) =>
@@ -291,35 +181,30 @@ export const useAdminStore = create<AdminState>()(
         })),
 
       removeProduct: async (id) => {
-        await supabase.from('products').delete().eq('id', id);
+        await supabase.from('rss_products').delete().eq('id', id);
         set((state) => ({ products: state.products.filter((p) => p.id !== id) }));
       },
 
       addCategory: async (c) => {
-        const slug = (slugify(c.slug) || slugify(c.label)) as CategorySlug;
+        const slug = slugify(c.name);
         if (!slug) return;
         if (get().categories.some((x) => x.slug === slug)) return;
         
-        const newCategory = {
-          slug,
-          label: c.label,
-          short: c.short,
-          description: c.description,
-        };
-
-        const { error } = await supabase.from('categories').insert(newCategory);
+        const { error } = await supabase.from('rss_categories').insert({ name: c.name, image_url: c.image_url });
         if (error) {
           console.error("Error creating category:", error);
           return;
         }
 
         set((state) => ({
-          categories: [...state.categories, newCategory],
+          categories: [...state.categories, { ...c, slug }],
         }));
       },
 
       updateCategory: async (slug, patch) => {
-        const { error } = await supabase.from('categories').update(patch).eq('slug', slug);
+        const cat = get().categories.find(c => c.slug === slug);
+        if (!cat) return;
+        const { error } = await supabase.from('rss_categories').update(patch).eq('id', cat.id);
         if (error) {
           console.error("Error updating category:", error);
           return;
@@ -332,21 +217,22 @@ export const useAdminStore = create<AdminState>()(
       },
 
       removeCategory: async (slug) => {
-        const { error } = await supabase.from('categories').delete().eq('slug', slug);
+        const cat = get().categories.find(c => c.slug === slug);
+        if (!cat) return;
+        const { error } = await supabase.from('rss_categories').delete().eq('id', cat.id);
         if (error) {
           console.error("Error deleting category:", error);
           return;
         }
         set((state) => ({
           categories: state.categories.filter((c) => c.slug !== slug),
-          // não remove produtos automaticamente; apenas oculta da listagem por categoria
         }));
       },
 
       reset: () =>
         set({
-          products: seedProducts.map((p) => ({ ...p, active: p.active ?? true })),
-          categories: [...seedCategories],
+          products: [],
+          categories: [],
         }),
     }),
     {

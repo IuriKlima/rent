@@ -77,7 +77,7 @@ function ProductsPage() {
 
   const filtered = useMemo(() => {
     return products.filter((p) => {
-      const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
+      const matchSearch = p.title.toLowerCase().includes(search.toLowerCase());
       const matchCat = filterCat === "all" || p.category === filterCat;
       return matchSearch && matchCat;
     });
@@ -123,7 +123,7 @@ function ProductsPage() {
     try {
       toast.info("Processando imagem...");
       const compressedBase64 = await compressImage(file);
-      updateProduct(id, { image: compressedBase64 });
+      updateProduct(id, { imageUrl: compressedBase64 });
       toast.success("Imagem atualizada e comprimida!");
     } catch (err) {
       console.error(err);
@@ -133,25 +133,25 @@ function ProductsPage() {
 
   // edit-in-place
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [draftName, setDraftName] = useState("");
+  const [draftTitle, setDraftTitle] = useState("");
   const [draftSku, setDraftSku] = useState("");
-  const [draftRent, setDraftRent] = useState("");
+  
 
-  function startEdit(id: string, name: string, sku?: string, rent?: number) {
+  function startEdit(id: string, name: string, sku?: string, ) {
     setEditingId(id);
-    setDraftName(name);
+    setDraftTitle(name);
     setDraftSku(sku ?? "");
-    setDraftRent(rent?.toString() ?? "");
+    
   }
   function cancelEdit() {
     setEditingId(null);
   }
   function saveEdit(id: string) {
-    const rent = draftRent ? Number(draftRent) : undefined;
+    
     updateProduct(id, {
-      name: draftName.trim() || undefined,
+      title: draftTitle.trim() || undefined,
       sku: draftSku.trim() || undefined,
-      monthlyRent: Number.isFinite(rent) ? rent : undefined,
+      
     });
     cancelEdit();
     toast.success("Produto atualizado");
@@ -196,12 +196,13 @@ function ProductsPage() {
             categories={categories}
             onSubmit={async (p) => {
               await addProduct({
-                name: p.name,
-                sku: p.sku,
+                id: crypto.randomUUID(),
+                title: p.title,
+                sku: p.sku ?? "",
                 category: p.category,
-                shortDescription: p.shortDescription ?? "",
+                subcategory: "",
                 description: p.description ?? "",
-                monthlyRent: p.monthlyRent,
+                imageUrl: "",
               });
               toast.success("Produto criado");
             }}
@@ -227,8 +228,8 @@ function ProductsPage() {
           <SelectContent>
             <SelectItem value="all">Todas as categorias</SelectItem>
             {categories.map((c) => (
-              <SelectItem key={c.slug} value={c.slug}>
-                {c.label}
+              <SelectItem key={c.slug} value={c.name}>
+                {c.name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -249,7 +250,7 @@ function ProductsPage() {
                 size="sm"
                 className="h-8 rounded-full text-xs font-semibold hover:bg-primary/10"
                 onClick={() => {
-                  bulkUpdateProducts(selectedIds, { active: true });
+                  
                   toast.success(`${selectedIds.length} produtos ativados`);
                   setSelectedIds([]);
                 }}
@@ -261,7 +262,7 @@ function ProductsPage() {
                 size="sm"
                 className="h-8 rounded-full text-xs font-semibold hover:bg-primary/10"
                 onClick={() => {
-                  bulkUpdateProducts(selectedIds, { active: false });
+                  
                   toast.success(`${selectedIds.length} produtos inativados`);
                   setSelectedIds([]);
                 }}
@@ -287,11 +288,11 @@ function ProductsPage() {
                       key={c.slug}
                       onClick={() => {
                         bulkUpdateProducts(selectedIds, { category: c.slug });
-                        toast.success(`Categoria alterada para ${c.label}`);
+                        toast.success(`Categoria alterada para ${c.name}`);
                         setSelectedIds([]);
                       }}
                     >
-                      {c.label}
+                      {c.name}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
@@ -339,7 +340,7 @@ function ProductsPage() {
               <TableHead>SKU</TableHead>
               <TableHead>Produto</TableHead>
               <TableHead>Categoria</TableHead>
-              <TableHead className="text-right">Locação / mês</TableHead>
+              
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
@@ -353,22 +354,22 @@ function ProductsPage() {
               </TableRow>
             )}
             {filtered.map((p) => {
-              const cat = categories.find((c) => c.slug === p.category)?.label ?? p.category;
+              const cat = categories.find((c) => c.name === p.category)?.name ?? p.category;
               const isEditing = editingId === p.id;
-              const active = p.active ?? true;
+              const active = true;
               return (
                 <TableRow key={p.id} className={cn(!active && "opacity-50", selectedIds.includes(p.id) && "bg-primary/5")}>
                   <TableCell>
                     <Checkbox
                       checked={selectedIds.includes(p.id)}
                       onCheckedChange={() => toggleSelect(p.id)}
-                      aria-label={`Selecionar ${p.name}`}
+                      aria-label={`Selecionar ${p.title}`}
                     />
                   </TableCell>
                   <TableCell>
                     <div className="group relative h-12 w-12 overflow-hidden rounded-lg bg-muted">
-                      {p.image ? (
-                        <img src={p.image} alt={p.name} className="h-full w-full object-cover" />
+                      {p.imageUrl ? (
+                        <img src={p.imageUrl} alt={p.title} className="h-full w-full object-cover" />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center">
                           <ImagePlus className="h-4 w-4 text-muted-foreground/50" />
@@ -403,36 +404,23 @@ function ProductsPage() {
                   <TableCell>
                     {isEditing ? (
                       <Input
-                        value={draftName}
-                        onChange={(e) => setDraftName(e.target.value)}
+                        value={draftTitle}
+                        onChange={(e) => setDraftTitle(e.target.value)}
                         className="h-8"
                       />
                     ) : (
                       <div>
-                        <div className="font-medium">{p.name}</div>
-                        {p.shortDescription && (
+                        <div className="font-medium">{p.title}</div>
+                        {p.description && (
                           <div className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
-                            {p.shortDescription}
+                            {p.description}
                           </div>
                         )}
                       </div>
                     )}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">{cat}</TableCell>
-                  <TableCell className="text-right">
-                    {isEditing ? (
-                      <Input
-                        type="number"
-                        value={draftRent}
-                        onChange={(e) => setDraftRent(e.target.value)}
-                        className="ml-auto h-8 w-28 text-right"
-                      />
-                    ) : p.monthlyRent ? (
-                      `R$ ${p.monthlyRent.toLocaleString("pt-BR")}`
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
+                  
                   <TableCell>
                     <span
                       className={cn(
@@ -458,7 +446,7 @@ function ProductsPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => startEdit(p.id, p.name, p.sku, p.monthlyRent)}
+                          onClick={() => startEdit(p.id, p.title, p.sku)}
                           className="h-8 rounded-full"
                         >
                           <Pencil className="mr-1 h-3 w-3" /> Editar
@@ -481,7 +469,7 @@ function ProductsPage() {
                           size="sm"
                           variant="ghost"
                           onClick={() => {
-                            if (confirm(`Excluir "${p.name}"? Essa ação não pode ser desfeita.`)) {
+                            if (confirm(`Excluir "${p.title}"? Essa ação não pode ser desfeita.`)) {
                               removeProduct(p.id);
                               toast.message("Produto removido");
                             }
@@ -508,13 +496,11 @@ function SingleCreateDialog({
   categories,
   onSubmit,
 }: {
-  categories: { slug: string; label: string }[];
+  categories: { slug: string; name: string }[];
   onSubmit: (p: {
-    name: string;
+    title: string;
     sku?: string;
-    category: never;
-    shortDescription?: string;
-    monthlyRent?: number;
+    category: string;
     description?: string;
   }) => void;
 }) {
@@ -522,7 +508,7 @@ function SingleCreateDialog({
   const [name, setName] = useState("");
   const [sku, setSku] = useState("");
   const [category, setCategory] = useState<string>(categories[0]?.slug ?? "");
-  const [shortDescription, setShortDescription] = useState("");
+  const [description, setShortDescription] = useState("");
   const [rent, setRent] = useState("");
 
   function reset() {
@@ -571,8 +557,8 @@ function SingleCreateDialog({
               </SelectTrigger>
               <SelectContent>
                 {categories.map((c) => (
-                  <SelectItem key={c.slug} value={c.slug}>
-                    {c.label}
+                  <SelectItem key={c.slug} value={c.name}>
+                    {c.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -580,7 +566,7 @@ function SingleCreateDialog({
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="np-short">Descrição curta</Label>
-            <Input id="np-short" value={shortDescription} onChange={(e) => setShortDescription(e.target.value)} placeholder="Frase de destaque" />
+            <Input id="np-short" value={description} onChange={(e) => setShortDescription(e.target.value)} placeholder="Frase de destaque" />
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="np-rent">Locação mensal (R$)</Label>
@@ -600,11 +586,11 @@ function SingleCreateDialog({
               }
               const r = rent ? Number(rent) : undefined;
               onSubmit({
-                name: name.trim(),
+                title: name.trim(),
                 sku: sku.trim() || undefined,
                 category: category as never,
-                shortDescription: shortDescription.trim(),
-                monthlyRent: Number.isFinite(r) ? r : undefined,
+                description: description.trim(),
+                
               });
               setOpen(false);
               reset();
@@ -624,9 +610,9 @@ function BulkCreateDialog({
   categories,
   onSubmit,
 }: {
-  categories: { slug: string; label: string }[];
+  categories: { slug: string; name: string }[];
   onSubmit: (
-    items: { name: string; category: never; shortDescription?: string; monthlyRent?: number }[],
+    items: { name: string; category: string; description?: string;  }[],
   ) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -636,27 +622,27 @@ function BulkCreateDialog({
 Leg Press 45° Evo,evo,Leg Press com curva otimizada,890
 Esteira Pro Silent,cardio,Esteira silenciosa premium,1290`;
 
-  function parse(): { name: string; category: never; shortDescription?: string; monthlyRent?: number }[] {
+  function parse(): { name: string; category: string; description?: string;  }[] {
     const validCats = new Set(categories.map((c) => c.slug));
     const lines = text
       .split(/\r?\n/)
       .map((l) => l.trim())
       .filter(Boolean);
 
-    const items: { name: string; category: never; shortDescription?: string; monthlyRent?: number }[] = [];
+    const items: { name: string; category: string; description?: string;  }[] = [];
     for (const line of lines) {
       // pula header
       if (/^nome[\s,]/i.test(line)) continue;
       const parts = line.split(",").map((p) => p.trim());
-      const [name, category, shortDescription, valueStr] = parts;
+      const [name, category, description, valueStr] = parts;
       if (!name || !category) continue;
       if (!validCats.has(category)) continue;
-      const monthlyRent = valueStr ? Number(valueStr) : undefined;
+      
       items.push({
         name,
         category: category as never,
-        shortDescription,
-        monthlyRent: Number.isFinite(monthlyRent) ? monthlyRent : undefined,
+        description,
+        
       });
     }
     return items;
@@ -768,9 +754,9 @@ function BulkUpdateDialog({
   categories,
   onSubmit,
 }: {
-  categories: { slug: string; label: string }[];
+  categories: { slug: string; name: string }[];
   onSubmit: (
-    items: { sku: string; name?: string; category?: never; shortDescription?: string; monthlyRent?: number }[],
+    items: { sku: string; name?: string; category?: never; description?: string;  }[],
   ) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -780,28 +766,28 @@ function BulkUpdateDialog({
 PT-01,Leg Press 45° Evo,evo,Leg Press com curva otimizada,890
 PT-02,Esteira Pro Silent,,Esteira silenciosa premium,1390`;
 
-  function parse(): { sku: string; name?: string; category?: never; shortDescription?: string; monthlyRent?: number }[] {
+  function parse(): { sku: string; name?: string; category?: never; description?: string;  }[] {
     const validCats = new Set(categories.map((c) => c.slug));
     const lines = text
       .split(/\r?\n/)
       .map((l) => l.trim())
       .filter(Boolean);
 
-    const items: { sku: string; name?: string; category?: never; shortDescription?: string; monthlyRent?: number }[] = [];
+    const items: { sku: string; name?: string; category?: never; description?: string;  }[] = [];
     for (const line of lines) {
       if (/^sku[\s,]/i.test(line)) continue; // pula header
       const parts = line.split(",").map((p) => p.trim());
-      const [sku, name, category, shortDescription, valueStr] = parts;
+      const [sku, name, category, description, valueStr] = parts;
       
       if (!sku) continue;
 
-      const monthlyRent = valueStr ? Number(valueStr) : undefined;
+      
       items.push({
         sku,
         name: name || undefined,
         category: validCats.has(category) ? category as never : undefined,
-        shortDescription: shortDescription || undefined,
-        monthlyRent: Number.isFinite(monthlyRent) ? monthlyRent : undefined,
+        description: description || undefined,
+        
       });
     }
     return items;

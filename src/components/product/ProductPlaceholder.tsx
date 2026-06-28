@@ -1,8 +1,7 @@
-import type { CategorySlug } from "@/data/products";
 import { Activity, Bike, Dumbbell, Footprints, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const ICONS: Record<CategorySlug, LucideIcon> = {
+const ICONS: Record<string, LucideIcon> = {
   evo: Dumbbell,
   select: Activity,
   "peso-livre": Dumbbell,
@@ -10,7 +9,7 @@ const ICONS: Record<CategorySlug, LucideIcon> = {
 };
 
 // Ícone alternativo para variar dentro de uma mesma categoria
-const ALT_ICONS: Record<CategorySlug, LucideIcon> = {
+const ALT_ICONS: Record<string, LucideIcon> = {
   evo: Activity,
   select: Footprints,
   "peso-livre": Footprints,
@@ -18,7 +17,7 @@ const ALT_ICONS: Record<CategorySlug, LucideIcon> = {
 };
 
 type Props = {
-  category: CategorySlug;
+  category: string;
   className?: string;
   variant?: "primary" | "alt";
   iconSize?: number;

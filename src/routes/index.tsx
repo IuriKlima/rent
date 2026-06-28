@@ -241,7 +241,7 @@ function HomePage() {
 
           <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {categories.map((c, i) => {
-              const firstProduct = products.find((p) => p.category === c.slug && p.image);
+              const firstProduct = products.find((p) => p.category === c.name && p.imageUrl);
 
               return (
                 <motion.div
@@ -256,11 +256,11 @@ function HomePage() {
                     search={{ categoria: c.slug }}
                     className="group block overflow-hidden rounded-3xl border border-border bg-card transition hover:shadow-xl"
                   >
-                    {firstProduct?.image ? (
+                    {firstProduct?.imageUrl ? (
                       <div className="aspect-[4/3] w-full overflow-hidden bg-muted">
                         <img
-                          src={firstProduct.image}
-                          alt={c.label}
+                          src={firstProduct.imageUrl}
+                          alt={c.name}
                           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       </div>
@@ -271,15 +271,9 @@ function HomePage() {
                       />
                     )}
                     <div className="p-5">
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">
-                        {c.short}
-                      </p>
                       <h3 className="mt-1 text-lg font-bold tracking-tight">
-                        {c.label}
+                        {c.name}
                       </h3>
-                      <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
-                        {c.description}
-                      </p>
                       <span className="mt-4 inline-flex items-center text-sm font-semibold text-primary">
                         Explorar <ArrowRight className="ml-1 h-3.5 w-3.5" />
                       </span>

@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useAdminStore } from "@/store/admin";
-import type { CategorySlug } from "@/data/products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2, Check, X } from "lucide-react";
 import { toast } from "sonner";
+import type { Category } from "@/data/products";
 
 export const Route = createFileRoute("/admin/categorias")({
   component: CategoriesPage,
@@ -25,14 +24,14 @@ export const Route = createFileRoute("/admin/categorias")({
 function CategoriesPage() {
   const { categories, products, addCategory, updateCategory, removeCategory } =
     useAdminStore();
-  const [editingSlug, setEditingSlug] = useState<CategorySlug | null>(null);
-  const [draft, setDraft] = useState({ label: "", short: "", description: "" });
+  const [editingSlug, setEditingSlug] = useState<string | null>(null);
+  const [draft, setDraft] = useState({ name: "", image_url: "" });
 
-  function startEdit(slug: CategorySlug) {
+  function startEdit(slug: string) {
     const c = categories.find((x) => x.slug === slug);
     if (!c) return;
     setEditingSlug(slug);
-    setDraft({ label: c.label, short: c.short, description: c.description });
+    setDraft({ name: c.name, image_url: c.image_url || "" });
   }
 
   function save() {
@@ -58,7 +57,7 @@ function CategoriesPage() {
         </div>
         <NewCategoryDialog
           onSubmit={(c) => {
-            addCategory(c);
+            addCategory({ id: crypto.randomUUID(), slug: "", ...c });
             toast.success("Categoria criada");
           }}
         />
@@ -66,7 +65,7 @@ function CategoriesPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {categories.map((c) => {
-          const count = products.filter((p) => p.category === c.slug).length;
+          const count = products.filter((p) => p.category === c.name).length;
           const isEditing = editingSlug === c.slug;
 
           return (
@@ -79,23 +78,15 @@ function CategoriesPage() {
                   <div className="grid gap-1">
                     <Label className="text-xs">Nome</Label>
                     <Input
-                      value={draft.label}
-                      onChange={(e) => setDraft({ ...draft, label: e.target.value })}
+                      value={draft.name}
+                      onChange={(e) => setDraft({ ...draft, name: e.target.value })}
                     />
                   </div>
                   <div className="grid gap-1">
-                    <Label className="text-xs">Subtítulo</Label>
+                    <Label className="text-xs">URL da Imagem</Label>
                     <Input
-                      value={draft.short}
-                      onChange={(e) => setDraft({ ...draft, short: e.target.value })}
-                    />
-                  </div>
-                  <div className="grid gap-1">
-                    <Label className="text-xs">Descrição</Label>
-                    <Textarea
-                      rows={3}
-                      value={draft.description}
-                      onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+                      value={draft.image_url}
+                      onChange={(e) => setDraft({ ...draft, image_url: e.target.value })}
                     />
                   </div>
                   <div className="flex justify-end gap-1.5">
@@ -115,18 +106,15 @@ function CategoriesPage() {
                 <>
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">
-                        {c.short}
-                      </p>
-                      <h3 className="mt-1 text-lg font-bold tracking-tight">{c.label}</h3>
+                      <h3 className="mt-1 text-lg font-bold tracking-tight">{c.name}</h3>
                     </div>
                     <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                       {count} {count === 1 ? "produto" : "produtos"}
                     </span>
                   </div>
-                  <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">
-                    {c.description}
-                  </p>
+                  {c.image_url && (
+                    <img src={c.image_url} alt={c.name} className="mt-3 h-20 w-full object-cover rounded-md" />
+                  )}
                   <p className="mt-3 text-[10px] uppercase tracking-wider text-muted-foreground">
                     slug: <code className="rounded bg-muted px-1">{c.slug}</code>
                   </p>
@@ -151,7 +139,7 @@ function CategoriesPage() {
                             )
                           )
                             return;
-                        } else if (!confirm(`Excluir a categoria "${c.label}"?`)) {
+                        } else if (!confirm(`Excluir a categoria "${c.name}"?`)) {
                           return;
                         }
                         removeCategory(c.slug);
@@ -174,19 +162,15 @@ function CategoriesPage() {
 function NewCategoryDialog({
   onSubmit,
 }: {
-  onSubmit: (c: { slug: string; label: string; short: string; description: string }) => void;
+  onSubmit: (c: { name: string; image_url: string }) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [label, setLabel] = useState("");
-  const [slug, setSlug] = useState("");
-  const [short, setShort] = useState("");
-  const [description, setDescription] = useState("");
+  const [name, setName] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
 
   function reset() {
-    setLabel("");
-    setSlug("");
-    setShort("");
-    setDescription("");
+    setName("");
+    setImageUrl("");
   }
 
   return (
@@ -212,20 +196,12 @@ function NewCategoryDialog({
 
         <div className="grid gap-4">
           <div className="grid gap-1.5">
-            <Label htmlFor="nc-label">Nome</Label>
-            <Input id="nc-label" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Ex: Linha Premium" />
+            <Label htmlFor="nc-name">Nome</Label>
+            <Input id="nc-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Linha Premium" />
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="nc-slug">Slug (opcional)</Label>
-            <Input id="nc-slug" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="linha-premium" />
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="nc-short">Subtítulo</Label>
-            <Input id="nc-short" value={short} onChange={(e) => setShort(e.target.value)} placeholder="Equipamentos top de linha" />
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="nc-desc">Descrição</Label>
-            <Textarea id="nc-desc" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+            <Label htmlFor="nc-image">URL da Imagem</Label>
+            <Input id="nc-image" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." />
           </div>
         </div>
 
@@ -235,15 +211,13 @@ function NewCategoryDialog({
           </Button>
           <Button
             onClick={() => {
-              if (!label.trim()) {
+              if (!name.trim()) {
                 toast.error("Informe o nome");
                 return;
               }
               onSubmit({
-                slug: slug.trim() || label.trim(),
-                label: label.trim(),
-                short: short.trim(),
-                description: description.trim(),
+                name: name.trim(),
+                image_url: imageUrl.trim(),
               });
               setOpen(false);
               reset();

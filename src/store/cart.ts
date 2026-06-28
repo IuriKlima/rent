@@ -1,11 +1,10 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { CategorySlug } from "@/data/products";
 
 export type CartItem = {
   id: string;
   name: string;
-  category: CategorySlug;
+  category: string;
   categoryLabel: string;
   quantity: number;
 };

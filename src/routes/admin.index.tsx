@@ -48,7 +48,7 @@ function DashboardPage() {
     setHeroImage(image);
   }
 
-  const activeProducts = products.filter((p) => p.active ?? true).length;
+  const activeProducts = products.length;
   const newQuotes = quotes.filter((q) => q.status === "novo").length;
 
   // últimos 14 dias

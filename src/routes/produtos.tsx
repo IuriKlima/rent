@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
-import { type CategorySlug } from "@/data/products";
+import { type Category } from "@/data/products";
 import { useAdminStore } from "@/store/admin";
 import { ProductCard } from "@/components/product/ProductCard";
 import { cn } from "@/lib/utils";
@@ -41,7 +41,7 @@ function ProductsPage() {
 
   const filters = [
     { slug: "todos", label: "Todos" },
-    ...categories.map((c) => ({ slug: c.slug, label: c.label })),
+    ...categories.map((c) => ({ slug: c.slug, label: c.name })),
   ];
 
   const filtered =
@@ -58,12 +58,10 @@ function ProductsPage() {
           Catálogo
         </span>
         <h1 className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">
-          {activeCategory ? activeCategory.label : "Equipamentos premium"}
+          {activeCategory ? activeCategory.name : "Equipamentos premium"}
         </h1>
         <p className="mt-4 text-muted-foreground">
-          {activeCategory
-            ? activeCategory.description
-            : "Equipamentos profissionais para todos os perfis de condomínio. Filtre por linha e monte seu projeto."}
+          Equipamentos profissionais para todos os perfis de condomínio. Filtre por linha e monte seu projeto.
         </p>
       </header>
 

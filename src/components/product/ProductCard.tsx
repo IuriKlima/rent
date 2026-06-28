@@ -1,6 +1,5 @@
 import { Link } from "@tanstack/react-router";
 import type { Product } from "@/data/products";
-import { categories } from "@/data/products";
 import { Button } from "@/components/ui/button";
 import { Plus, ArrowRight } from "lucide-react";
 import { useCart } from "@/store/cart";
@@ -11,18 +10,17 @@ import { motion } from "framer-motion";
 export function ProductCard({ product }: { product: Product }) {
   const addItem = useCart((s) => s.addItem);
   const setOpen = useCart((s) => s.setOpen);
-  const categoryLabel =
-    categories.find((c) => c.slug === product.category)?.label ?? product.category;
+  const categoryLabel = product.category;
 
   function handleAdd() {
     addItem({
       id: product.id,
-      name: product.name,
+      name: product.title,
       category: product.category,
       categoryLabel,
     });
     toast.success("Adicionado ao orçamento", {
-      description: product.name,
+      description: product.title,
       action: {
         label: "Ver",
         onClick: () => setOpen(true),
@@ -40,13 +38,13 @@ export function ProductCard({ product }: { product: Product }) {
         to="/produto/$id"
         params={{ id: product.id }}
         className="block"
-        aria-label={`Ver detalhes de ${product.name}`}
+        aria-label={`Ver detalhes de ${product.title}`}
       >
-        {product.image ? (
+        {product.imageUrl ? (
           <div className="aspect-[4/3] w-full overflow-hidden bg-muted">
             <img
-              src={product.image}
-              alt={product.name}
+              src={product.imageUrl}
+              alt={product.title}
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
           </div>
@@ -64,11 +62,11 @@ export function ProductCard({ product }: { product: Product }) {
             params={{ id: product.id }}
             className="hover:text-primary transition"
           >
-            {product.name}
+            {product.title}
           </Link>
         </h3>
         <p className="mt-1.5 hidden sm:block line-clamp-2 text-sm text-muted-foreground">
-          {product.shortDescription}
+          {product.description}
         </p>
         <div className="mt-3 sm:mt-5 flex flex-wrap items-center gap-1.5 sm:gap-2">
           <Button
