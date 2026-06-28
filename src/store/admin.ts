@@ -64,45 +64,50 @@ export const useAdminStore = create<AdminState>()(
       user: null,
 
       initialize: async () => {
-        // Paralelizar todas as queries para reduzir latência (~3x mais rápido)
-        const [sessionResult, catsResult, prodsResult, configResult] = await Promise.all([
-          supabase.auth.getSession(),
-          supabase.from('rss_categories').select('*').order('name'),
-          supabase.from('rss_products').select('*').order('created_at', { ascending: false }),
-          supabase.from('site_config').select('*'),
-        ]);
+        try {
+          // Paralelizar todas as queries para reduzir latência (~3x mais rápido)
+          const [sessionResult, catsResult, prodsResult, configResult] = await Promise.all([
+            supabase.auth.getSession(),
+            supabase.from('rss_categories').select('*').order('name'),
+            supabase.from('rss_products').select('*').order('created_at', { ascending: false }),
+            supabase.from('site_config').select('*').catch(() => ({ data: null })), // Handle se site_config não existir
+          ]);
 
-        const session = sessionResult.data?.session;
-        const cats = catsResult.data;
-        const prods = prodsResult.data;
-        const config = configResult.data;
-        const hero = config?.find(c => c.key === 'hero')?.value?.image;
+          const session = sessionResult.data?.session;
+          const cats = catsResult.data;
+          const prods = prodsResult.data;
+          const config = configResult.data;
+          const hero = config?.find((c: any) => c.key === 'hero')?.value?.image;
 
-        if (session) {
-          useQuotes.getState().fetchQuotes();
+          if (session) {
+            useQuotes.getState().fetchQuotes().catch(console.error);
+          }
+
+          set({ 
+            loading: false,
+            user: session?.user ?? null,
+            unlocked: !!session?.user,
+            categories: (cats?.map((c: any) => ({
+              id: c.id,
+              name: c.name,
+              slug: slugify(c.name),
+              image_url: c.image_url
+            })) as Category[]) || [],
+            products: (prods?.map((p: any) => ({
+              id: p.id,
+              sku: p.sku || '',
+              title: p.title,
+              category: p.category,
+              subcategory: p.subcategory || '',
+              description: p.description,
+              imageUrl: p.imageUrl
+            })) as Product[]) || [],
+            heroImage: hero || undefined
+          });
+        } catch (error) {
+          console.error("Failed to initialize admin store:", error);
+          set({ loading: false }); // Garante que a splash saia da tela
         }
-
-        set({ 
-          loading: false,
-          user: session?.user ?? null,
-          unlocked: !!session?.user,
-          categories: (cats?.map(c => ({
-            id: c.id,
-            name: c.name,
-            slug: slugify(c.name),
-            image_url: c.image_url
-          })) as Category[]) || [],
-          products: (prods?.map(p => ({
-            id: p.id,
-            sku: p.sku || '',
-            title: p.title,
-            category: p.category,
-            subcategory: p.subcategory || '',
-            description: p.description,
-            imageUrl: p.imageUrl
-          })) as Product[]) || [],
-          heroImage: hero || undefined
-        });
 
         // Listen for auth changes
         supabase.auth.onAuthStateChange((_event, session) => {
