@@ -3,7 +3,5 @@ node_modules
 .env
 .vinxi
 scripts
-src
-public
 *.md
 package-lock.json
