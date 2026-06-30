@@ -1,3 +1,4 @@
+import * as React from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
@@ -44,17 +45,15 @@ function ProductsPage() {
     ...categories.map((c) => ({ slug: c.slug, label: c.name })),
   ];
 
+  const activeCategory = categories.find((c) => c.slug === categoria);
+
   const filtered =
     categoria === "todos"
       ? products
       : products.filter((p) => {
-          const productSlug = activeCategory?.name === p.category ? activeCategory.slug : p.category.toLowerCase().replace(/ /g, '-');
-          // Simplificando, compara apenas se encontrar a categoria certa no estado do admin
           const cat = categories.find((c) => c.name === p.category);
           return cat ? cat.slug === categoria : false;
         });
-
-  const activeCategory = categories.find((c) => c.slug === categoria);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">

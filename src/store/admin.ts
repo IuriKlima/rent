@@ -16,6 +16,7 @@ type AdminState = {
   heroImage?: string;
   unlocked: boolean;
   user: any | null;
+  initError?: any;
   initialize: () => Promise<void>;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
@@ -62,6 +63,7 @@ export const useAdminStore = create<AdminState>()(
       heroImage: undefined,
       unlocked: false,
       user: null,
+      initError: undefined,
 
       initialize: async () => {
         try {
@@ -70,7 +72,7 @@ export const useAdminStore = create<AdminState>()(
             supabase.auth.getSession(),
             supabase.from('rss_categories').select('*').order('name'),
             supabase.from('rss_products').select('*').order('created_at', { ascending: false }),
-            supabase.from('site_config').select('*').catch(() => ({ data: null })), // Handle se site_config não existir
+            supabase.from('site_config').select('*'), // Resolve gracefully even if table is missing
           ]);
 
           const session = sessionResult.data?.session;
@@ -109,11 +111,12 @@ export const useAdminStore = create<AdminState>()(
               description: p.description,
               imageUrl: p.imageUrl
             })) as Product[]) || [],
-            heroImage: hero || undefined
+            heroImage: hero || undefined,
+            initError: catsResult.error || prodsResult.error || undefined
           });
-        } catch (error) {
+        } catch (error: any) {
           console.error("Failed to initialize admin store:", error);
-          set({ loading: false }); // Garante que a splash saia da tela
+          set({ loading: false, initError: error.message || String(error) || "Unknown Error" }); // Garante que a splash saia da tela
         }
 
         // Listen for auth changes
