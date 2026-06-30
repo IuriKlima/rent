@@ -69,6 +69,23 @@ function ProductsPage() {
         </p>
       </header>
 
+      {/* DEBUG ERRORS */}
+      {products.length === 0 && categories.length === 0 && (
+        <div className="mt-8 rounded-xl bg-red-100 p-6 text-red-900 border border-red-300">
+          <h2 className="font-bold text-lg">Modo Espião Ativado:</h2>
+          <p>Tire um print desta caixa para descobrirmos o que deu errado em produção:</p>
+          <pre className="mt-2 text-xs overflow-auto bg-white/50 p-2 rounded whitespace-pre-wrap">
+            {JSON.stringify({ 
+              storeProductsLength: products.length, 
+              storeCategoriesLength: categories.length,
+              initError: initError,
+              url: import.meta.env.VITE_SUPABASE_URL || "MISSING_URL",
+              keyPrefix: import.meta.env.VITE_SUPABASE_ANON_KEY ? import.meta.env.VITE_SUPABASE_ANON_KEY.substring(0, 15) + "..." : "MISSING_KEY"
+            }, null, 2)}
+          </pre>
+        </div>
+      )}
+
       {/* FILTROS */}
       <div className="mt-8 flex flex-wrap gap-2">
         {filters.map((f) => {
