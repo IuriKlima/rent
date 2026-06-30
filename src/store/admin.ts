@@ -77,6 +77,13 @@ export const useAdminStore = create<AdminState>()(
           const cats = catsResult.data;
           const prods = prodsResult.data;
           const config = configResult.data;
+          
+          if (catsResult.error) console.error("Cats error:", catsResult.error);
+          if (prodsResult.error) console.error("Prods error:", prodsResult.error);
+          if (configResult.error) console.warn("Config error (ignored):", configResult.error);
+
+          console.log("INITIALIZE RESULTS:", { catsResult, prodsResult, configResult });
+
           const hero = config?.find((c: any) => c.key === 'hero')?.value?.image;
 
           if (session) {

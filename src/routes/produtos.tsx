@@ -47,7 +47,12 @@ function ProductsPage() {
   const filtered =
     categoria === "todos"
       ? products
-      : products.filter((p) => p.category === categoria);
+      : products.filter((p) => {
+          const productSlug = activeCategory?.name === p.category ? activeCategory.slug : p.category.toLowerCase().replace(/ /g, '-');
+          // Simplificando, compara apenas se encontrar a categoria certa no estado do admin
+          const cat = categories.find((c) => c.name === p.category);
+          return cat ? cat.slug === categoria : false;
+        });
 
   const activeCategory = categories.find((c) => c.slug === categoria);
 
