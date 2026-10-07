@@ -11,14 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Minus,
-  Plus,
-  Trash2,
-  MessageCircle,
-  ShoppingBag,
-  ArrowLeft,
-} from "lucide-react";
+import { Minus, Plus, Trash2, MessageCircle, ShoppingBag, ArrowLeft } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link } from "@tanstack/react-router";
 import { z } from "zod";
@@ -26,27 +19,19 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const leadSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(2, "Informe seu nome.")
-    .max(100, "Nome muito longo."),
+  name: z.string().trim().min(2, "Informe seu nome.").max(100, "Nome muito longo."),
   condominio: z
     .string()
     .trim()
     .min(2, "Informe o nome do condomínio.")
     .max(120, "Nome do condomínio muito longo."),
-  phone: z
-    .string()
-    .trim()
-    .min(8, "Informe um telefone válido.")
-    .max(20, "Telefone inválido."),
-  email: z
-    .string()
-    .trim()
-    .email("E-mail inválido.")
-    .max(160, "E-mail muito longo."),
+  phone: z.string().trim().min(8, "Informe um telefone válido.").max(20, "Telefone inválido."),
+  email: z.string().trim().email("E-mail inválido.").max(160, "E-mail muito longo."),
 });
+
+const isSupabaseConfigured = Boolean(
+  import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY,
+);
 
 type Step = "items" | "lead";
 type FieldErrors = Partial<Record<keyof WhatsappLead, string>>;
@@ -63,6 +48,8 @@ export function CartDrawer() {
     email: "",
   });
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const totalItems = items.reduce((acc, i) => acc + i.quantity, 0);
 
@@ -71,8 +58,14 @@ export function CartDrawer() {
     if (errors[key]) setErrors((e) => ({ ...e, [key]: undefined }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (saving) return;
+    if (items.length === 0) {
+      setStep("items");
+      toast.error("Adicione ao menos um equipamento ao orçamento.");
+      return;
+    }
     const parsed = leadSchema.safeParse(lead);
     if (!parsed.success) {
       const fieldErrors: FieldErrors = {};
@@ -86,21 +79,27 @@ export function CartDrawer() {
 
     const safeLead = parsed.data;
 
-    // Salva o orçamento localmente para aparecer no admin
-    addQuote({ lead: safeLead, items });
-
     const url = buildWhatsappUrl(items, safeLead);
-    window.open(url, "_blank", "noopener,noreferrer");
+    // Abra durante o gesto do usuário para evitar bloqueio de pop-up.
+    const opened = window.open(url, "_blank");
+    if (opened) opened.opener = null;
+    setFallbackUrl(opened ? null : url);
 
-    toast.success("Orçamento enviado!", {
-      description: "Abrimos o WhatsApp em uma nova aba.",
-    });
+    if (isSupabaseConfigured) {
+      setSaving(true);
+      try {
+        await addQuote({ lead: safeLead, items: [...items] });
+      } catch {
+        toast.error("O orçamento não foi salvo no painel. Seus itens continuam aqui.");
+        setSaving(false);
+        return;
+      }
+      setSaving(false);
+    }
 
-    clear();
-    setLead({ name: "", condominio: "", phone: "", email: "" });
-    setErrors({});
-    setStep("items");
-    setOpen(false);
+    toast.info(
+      opened ? "WhatsApp aberto. Revise e envie a mensagem." : "Use o link para abrir o WhatsApp.",
+    );
   }
 
   function handleOpenChange(open: boolean) {
@@ -109,15 +108,13 @@ export function CartDrawer() {
       // reset wizard ao fechar
       setStep("items");
       setErrors({});
+      setFallbackUrl(null);
     }
   }
 
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-      <SheetContent
-        side="right"
-        className="flex w-full flex-col gap-0 sm:max-w-md p-0"
-      >
+      <SheetContent side="right" className="flex w-full flex-col gap-0 sm:max-w-md p-0">
         <SheetHeader className="border-b border-border px-6 py-5">
           <SheetTitle className="flex items-center gap-2 text-xl font-extrabold tracking-tight">
             <ShoppingBag className="h-5 w-5 text-primary" />
@@ -141,9 +138,7 @@ export function CartDrawer() {
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
                     <ShoppingBag className="h-7 w-7 text-muted-foreground" />
                   </div>
-                  <p className="mt-4 text-sm text-muted-foreground">
-                    Seu orçamento está vazio.
-                  </p>
+                  <p className="mt-4 text-sm text-muted-foreground">Seu orçamento está vazio.</p>
                   <Button
                     asChild
                     variant="outline"
@@ -283,19 +278,30 @@ export function CartDrawer() {
               </div>
 
               <p className="mt-5 text-xs text-muted-foreground">
-                Ao enviar, abriremos o WhatsApp com sua cotação. Seus dados são
-                usados apenas para retorno comercial.
+                O WhatsApp abrirá com a mensagem preenchida. Revise e envie por lá. Seus dados são
+                usados para retorno comercial.
               </p>
+              {fallbackUrl && (
+                <a
+                  href={fallbackUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-4 inline-block font-semibold text-primary underline underline-offset-4"
+                >
+                  Abrir mensagem no WhatsApp
+                </a>
+              )}
             </div>
 
             <div className="border-t border-border bg-background/95 px-6 py-5">
               <Button
                 type="submit"
+                disabled={saving}
                 size="lg"
                 className="w-full rounded-full bg-primary text-primary-foreground hover:opacity-90"
               >
                 <MessageCircle className="mr-2 h-4 w-4" />
-                Enviar cotação pelo WhatsApp
+                {saving ? "Registrando orçamento..." : "Abrir cotação no WhatsApp"}
               </Button>
             </div>
           </form>
@@ -334,9 +340,16 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         autoComplete={autoComplete}
+        required
+        aria-invalid={Boolean(error)}
+        aria-describedby={error ? `${id}-error` : undefined}
         className={cn(error && "border-destructive focus-visible:ring-destructive")}
       />
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && (
+        <p id={`${id}-error`} className="text-xs text-destructive">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

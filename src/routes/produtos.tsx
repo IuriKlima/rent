@@ -65,24 +65,18 @@ function ProductsPage() {
           {activeCategory ? activeCategory.name : "Equipamentos premium"}
         </h1>
         <p className="mt-4 text-muted-foreground">
-          Equipamentos profissionais para todos os perfis de condomínio. Filtre por linha e monte seu projeto.
+          Equipamentos profissionais para todos os perfis de condomínio. Filtre por linha e monte
+          seu projeto.
         </p>
       </header>
 
-      {/* DEBUG ERRORS */}
       {products.length === 0 && categories.length === 0 && (
-        <div className="mt-8 rounded-xl bg-red-100 p-6 text-red-900 border border-red-300">
-          <h2 className="font-bold text-lg">Modo Espião Ativado:</h2>
-          <p>Tire um print desta caixa para descobrirmos o que deu errado em produção:</p>
-          <pre className="mt-2 text-xs overflow-auto bg-white/50 p-2 rounded whitespace-pre-wrap">
-            {JSON.stringify({ 
-              storeProductsLength: products.length, 
-              storeCategoriesLength: categories.length,
-              initError: initError,
-              url: import.meta.env.VITE_SUPABASE_URL || "MISSING_URL",
-              keyPrefix: import.meta.env.VITE_SUPABASE_ANON_KEY ? import.meta.env.VITE_SUPABASE_ANON_KEY.substring(0, 15) + "..." : "MISSING_KEY"
-            }, null, 2)}
-          </pre>
+        <div
+          className="mt-8 rounded-xl border border-border bg-muted p-6 text-sm text-muted-foreground"
+          role="status"
+        >
+          O catálogo está temporariamente indisponível. Entre em contato para consultar os
+          equipamentos.
         </div>
       )}
 
@@ -109,10 +103,7 @@ function ProductsPage() {
       </div>
 
       {/* GRID */}
-      <motion.div
-        layout
-        className="mt-10 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-3"
-      >
+      <motion.div layout className="mt-10 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-3">
         {filtered.map((p) => (
           <ProductCard key={p.id} product={p} />
         ))}
